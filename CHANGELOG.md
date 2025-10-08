@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025-10-08
+
+### Added
+- Implemented the core translation logic to convert MilkDrop `per_frame` and `per_pixel` equations to GLSL.
+- Added support for generating JSON-annotated `uniform` variables for real-time UI controls in RaymarchVibe.
+- Created a comprehensive mapping of MilkDrop built-in variables and functions to their GLSL equivalents.
+- Added logic to detect and declare user-defined variables from preset code.
+
+### Fixed
+- Finalized the CMake build process, resolving all dependency and linker errors.
+- Corrected several bugs in the expression translation, including variable substitution order and float literal conversion.
+
 ## [0.2.0] - 2025-10-08
 
 ### Added
