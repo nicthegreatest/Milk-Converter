@@ -4,6 +4,8 @@ project(MilkdropConverter LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+set(ENABLE_SYSTEM_PROJECTM_EVAL OFF CACHE BOOL "Use vendored projectm-eval")
+set(ENABLE_CXX_INTERFACE ON CACHE BOOL "Enable C++ interface for libprojectM")
 add_subdirectory(vendor/projectm-master)
 
 add_executable(MilkdropConverter
@@ -11,6 +13,7 @@ add_executable(MilkdropConverter
 )
 
 target_include_directories(MilkdropConverter PRIVATE
+  ${CMAKE_BINARY_DIR}/vendor/projectm-master/src/api/include
   vendor/projectm-master/src/libprojectM
   vendor/projectm-master/src/api/include
 )
