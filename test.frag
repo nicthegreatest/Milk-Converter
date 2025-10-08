@@ -102,18 +102,11 @@ void main() {
     float t6 = 0.0;
     float t7 = 0.0;
     float t8 = 0.0;
-    float myvar = 0.0;
+    float my_user_var = 0.0;
 
     // Per-frame logic
-    wave_r = 0.5.0 + 0.5.0*sin(iTime);
-    wave_g = 0.5.0 + 0.5.0*cos(iTime);
-    wave_b = 0.5.0;
 
     // Per-pixel logic
-    myvar = iAudioBands.uv.x*2.0;
-    r = myvar * uv.x;
-    g = myvar * uv.y;
-    b = 0.0;
 
     FragColor = vec4(r, g, b, a);
 }
