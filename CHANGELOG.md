@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.7.0] - 2025-10-09
+## [0.6.1] - 2025-10-09
 
 Fixes the GLSL shader conversion logic to correctly apply per-pixel transformations and use the proper color variables.
 
