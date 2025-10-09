@@ -9,12 +9,16 @@ This commit significantly improves the Milkdrop to GLSL converter to produce sha
 The key enhancements include:
 
 - **Data-Driven UI Controls:** The converter now parses the header of `.milk` files to extract default parameter values. These values are used to generate `uniform` declarations with accurate JSON annotations, enabling data-driven UI controls in RaymarchVibe.
+- The RaymarchVibe ShaderParser requires uniform declarations to have an explicit default value to generate UI controls. Updated `MilkdropConverter` to include the explicit default value in the generated uniform declaration, ensuring compatibility with the parser. 
 
 - **Improved Parsing:** The `PresetFileParser` has been patched to correctly handle non-sequential and multi-line code blocks in `.milk` files, ensuring that the entire `per_frame` and `per_pixel` logic is captured and correctly formatted.
 
 - **Enhanced Variable Mapping:** The converter now maps MilkDrop's `aspectx` and `aspecty` variables to their `iResolution` equivalents in GLSL, making the generated shaders resolution-aware.
 
 - **Full Texture & Logic Translation:** The generated shaders now include a proper feedback loop. The logic samples the previous frame's output from `iChannel0` using the calculated warped UVs, applies the `decay` factor, and blends the result with the `ob_` (outer border) color. This provides a more complete and faithful translation of the original preset's visual logic.
+
+- **Added default values to GLSL uniform declarations**
+- 
 
 These changes result in shaders that are more interactive, visually accurate, and fully integrated with the RaymarchVibe environment... apparantly.
 
