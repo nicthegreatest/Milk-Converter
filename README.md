@@ -102,3 +102,14 @@ Once built, you can run the converter from the project's root directory with the
 ```bash
 ./build/MilkdropConverter /path/to/input.milk /path/to/output.frag
 ```
+## 5. Known Issues
+
+Currently the converter successfully transforms the logic within the .milk files in to GLSL shader fragments.
+
+However, a number of errors arise when trying to load the converted shader in to RaymarchVibe.
+
+The issue is that the Milkdrop preset language uses floating-point numbers (0.0 for false, non-zero for true) for boolean logic, but the GLSL shader language has a strict bool type.
+
+My first attempt was to change the C++ code to generate true and false for boolean operations. This failed because the rest of the generated shader code expects floats, leading to type mismatch errors where booleans were assigned to float variables or used in arithmetic.
+
+I'm guessing that MilkdropConverter.cpp code needs to produce GLSL that uses floats for boolean logic, which will align with the expectations of the rest of the shader. Examine the bnot function to continue...
