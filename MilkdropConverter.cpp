@@ -47,6 +47,8 @@ const std::unordered_map<std::string, std::string> milkToGLSLVars = {
     {"y", "uv.y"},
     {"rad", "length(uv - vec2(0.5))"},
     {"ang", "atan(uv.y - 0.5, uv.x - 0.5)"},
+    {"aspectx", "(iResolution.y / iResolution.x)"},
+    {"aspecty", "(iResolution.x / iResolution.y)"},
 };
 
 // Metadata for generating UI controls for writable variables.
@@ -329,7 +331,7 @@ std::set<std::string> findUserVars(prjm_eval_compiler_context_t* ctx) {
     return userVars;
 }
 
-std::string translateToGLSL(const std::string& perFrame, const std::string& perPixel) {
+std::string translateToGLSL(const std::string& perFrame, const std::string& perPixel, const libprojectM::PresetFileParser::ValueMap& presetValues) {
     projectm_eval_context* context = projectm_eval_context_create(nullptr, nullptr);
     if (!context) {
         std::cerr << "Failed to create projectm-eval context." << std::endl;
@@ -353,10 +355,25 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
     std::string glsl = "#version 330 core\n\nout vec4 FragColor;\nin vec2 uv;\n\n";
     glsl += "float float_from_bool(bool b) { return b ? 1.0 : 0.0; }\n\n";
     glsl += "// Standard RaymarchVibe uniforms\n";
-    glsl += "uniform float iTime;\nuniform vec2 iResolution;\nuniform float iFps;\nuniform float iFrame;\nuniform float iProgress;\nuniform vec4 iAudioBands;\nuniform vec4 iAudioBandsAtt;\n\n";
+    glsl += "uniform float iTime;\nuniform vec2 iResolution;\nuniform float iFps;\nuniform float iFrame;\nuniform float iProgress;\nuniform vec4 iAudioBands;\nuniform vec4 iAudioBandsAtt;\n";
+    glsl += "uniform sampler2D iChannel0; // Feedback buffer\n";
+    glsl += "uniform sampler2D iChannel1;\n";
+    glsl += "uniform sampler2D iChannel2;\n";
+    glsl += "uniform sampler2D iChannel3;\n\n";
     glsl += "// Preset-specific uniforms with UI annotations\n";
     for(const auto& pair : uniformControls) {
-        glsl += "uniform float u_" + pair.first + "; // {\"widget\":\"" + pair.second.widget + "\",\"default\":" + pair.second.defaultValue + ",\"min\":" + pair.second.min + ",\"max\":" + pair.second.max + ",\"step\":" + pair.second.step + "}\n";
+        std::string defaultValue = pair.second.defaultValue;
+        auto it = presetValues.find(pair.first);
+        if (it != presetValues.end()) {
+            try {
+                // Ensure the value is a valid float before using it.
+                std::stof(it->second);
+                defaultValue = it->second;
+            } catch (const std::logic_error& e) {
+                // Value from .milk file is not a float, use hardcoded default.
+            }
+        }
+        glsl += "uniform float u_" + pair.first + "; // {\"widget\":\"" + pair.second.widget + "\",\"default\":" + defaultValue + ",\"min\":" + pair.second.min + ",\"max\":" + pair.second.max + ",\"step\":" + pair.second.step + "}\n";
     }
     glsl += "\nvoid main() {\n";
     glsl += "    // Initialize local variables from uniforms\n";
@@ -389,11 +406,14 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
 
 )___";
     glsl += "\n    // Final color composition\n";
-    glsl += "    FragColor = vec4(ob_r, ob_g, ob_b, ob_a);\n\n";
-    glsl += "    // In a real engine, transformed_uv would sample a feedback buffer.\n";
-    glsl += "    // To visualize the warp effect, we modulate the color by the transformed UVs.\n";
-    glsl += "    FragColor.r *= transformed_uv.x;\n";
-    glsl += "    FragColor.g *= transformed_uv.y;\n";
+    glsl += "    // Sample the previous frame's output (feedback buffer) with warped UVs.\n";
+    glsl += "    vec4 feedback = texture(iChannel0, transformed_uv);\n";
+    glsl += "\n    // Apply decay, which is essential for the classic MilkDrop fade effect.\n";
+    glsl += "    feedback.rgb *= decay;\n";
+    glsl += "\n    // The 'ob_' variables are for the outer border. We'll use them to tint the feedback color.\n";
+    glsl += "    // A full implementation would draw waves and borders, but this is a good approximation.\n";
+    glsl += "    vec4 border_color = vec4(ob_r, ob_g, ob_b, ob_a);\n";
+    glsl += "    FragColor = mix(feedback, border_color, border_color.a);\n";
     glsl += "}\n";
     return glsl;
 }
@@ -416,7 +436,7 @@ int main(int argc, char* argv[]) {
     std::string perFrameCode = parser.GetCode("per_frame_");
     std::string perPixelCode = parser.GetCode("per_pixel_");
 
-    std::string glsl = translateToGLSL(perFrameCode, perPixelCode);
+    std::string glsl = translateToGLSL(perFrameCode, perPixelCode, parser.PresetValues());
     std::ofstream out(outputFile);
     if (!out) {
         std::cerr << "Error: Could not open output file for writing: " << outputFile << "\n";
