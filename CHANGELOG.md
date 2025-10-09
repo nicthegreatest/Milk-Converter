@@ -2,21 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.5.0] - 2025-10-08
+## [0.5.0] - 2025-10-09
 
 ### Fixed
-- **Resolved a deep, silent parsing failure in the `projectm-eval` library.** This was a complex issue with multiple layers that caused the converter to produce incomplete shaders with no errors.
-    - **Initial Symptom:** The converter would run successfully but produce a `.frag` file where all per-frame and per-pixel logic was missing, and many uniform values were zeroed out.
+- **Resolved a deep, silent parsing failure in the `projectm-eval` library by implementing a C++ workaround.** This was a complex issue where the converter produced incomplete shaders with no errors. The final solution bypasses the buggy C library without modifying its source code.
+    - **Initial Symptom:** The converter would run successfully but produce a `.frag` file where all per-frame and per-pixel logic was missing. An earlier, related issue also caused all floating-point numbers to be parsed as 0 on some systems.
     - **Diagnostic Process:**
-        1.  **Locale-related float parsing:** The first issue identified was that the C++ `std::setlocale` was not set. On systems with a comma as a decimal separator, this caused the `projectm-eval` library to parse all floating-point numbers as 0. This was fixed by setting the numeric locale to "C" at runtime.
-        2.  **Build System Investigation:** The investigation then moved to the `projectM` submodule's build process. Several issues were found and fixed, including missing `libgl1-mesa-dev`, `bison`, and `flex` dependencies, and a CMake versioning problem that caused undefined version macros during compilation.
-        3.  **Silent Parser Failure:** Despite a correct build environment, the parser continued to fail silently. By instrumenting the converter with extensive debugging (including printing the raw parser state machine trace), it was determined that the `projectm-eval` parser was not returning an error but was instead returning a valid, empty Abstract Syntax Tree (AST).
-        4.  **Grammar Analysis:** A deep analysis of the `Compiler.y` (Bison grammar) and `Scanner.l` (Flex lexer) files revealed the final root cause.
-    - **Root Cause:** The `projectm-eval` grammar contained a flawed rule for handling "empty statements" (`instruction-list: instruction-list ';' empty-expression`). This rule was causing the parser to incorrectly terminate when it encountered a list of statements, which is the format of the code from the `.milk` files.
-    - **The Definitive Fix:** The faulty `empty-expression` rule was removed from the `Compiler.y` grammar. This makes the parser stricter and prevents it from misinterpreting valid, multi-statement code blocks, finally resolving the conversion failure.
+        1.  **Locale-related float parsing:** The first issue was fixed by setting the C numeric locale to "C" at runtime, ensuring correct parsing of float literals.
+        2.  **Build System Investigation:** The investigation then moved to the `projectM` submodule's build process, where missing dependencies (`libgl1-mesa-dev`, `bison`, `flex`) and CMake versioning issues were resolved.
+        3.  **Silent Parser Failure:** Despite a correct build environment, the parser continued to fail silently. Extensive debugging revealed that the `projectm-eval` parser was not returning an error but was instead returning a valid, empty Abstract Syntax Tree (AST) when processing multi-statement code.
+        4.  **Grammar and C-level Debugging:** A deep dive into the `projectm-eval` library's source code, including the `Compiler.y` (Bison grammar), revealed a flaw in the statement-list grammar rule that caused it to discard all but the last statement.
+    - **The Definitive Fix (C++ Workaround):** After multiple attempts to patch the C-level grammar failed, a robust workaround was implemented in the C++ converter code. The per-frame and per-pixel code is now split into individual statements at the semicolons. Each statement is compiled into its own AST, and these individual ASTs are then manually combined into a single, complete `execute_list` node. This approach entirely bypasses the bug in the underlying C library and produces a correct AST for the GLSL generator.
 
 ### Changed
-- The `projectm-eval` submodule, a dependency of `projectM`, has been patched directly to correct the faulty parser grammar.
+- The conversion logic in `MilkdropConverter.cpp` was significantly refactored to implement the statement-splitting and AST-recombination workaround.
 
 ## [0.4.0] - 2025-10-08
 
