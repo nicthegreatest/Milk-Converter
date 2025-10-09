@@ -74,7 +74,6 @@ const std::unordered_map<std::string, UniformControl> uniformControls = {
     {"a", {"1.0", "slider", "0.0", "1.0", "0.01"}},
 };
 
-
 class GLSLGenerator {
 public:
     GLSLGenerator(projectm_eval_context* context);
@@ -133,14 +132,13 @@ GLSLGenerator::GLSLGenerator(projectm_eval_context* context)
     m_func_map[(void*)prjm_eval_func_max] = "max";
     m_func_map[(void*)prjm_eval_func_floor] = "floor";
     m_func_map[(void*)prjm_eval_func_ceil] = "ceil";
+    m_func_map[(void*)prjm_eval_func_bnot] = "bnot";
     m_func_map[(void*)prjm_eval_func_boolean_and_func] = "band";
     m_func_map[(void*)prjm_eval_func_boolean_or_func] = "bor";
 }
 
 std::string GLSLGenerator::generate(const prjm_eval_exptreenode* tree) {
-    if (!tree) {
-        return "";
-    }
+    if (!tree) return "";
     std::string result;
     if (tree->func == prjm_eval_func_execute_list) {
         if (tree->args) {
@@ -167,32 +165,23 @@ std::string GLSLGenerator::traverseNode(const prjm_eval_exptreenode* node) {
     }
     if (isVariable(node)) {
         std::string varName = getVariableName(node);
-        if (milkToGLSLVars.count(varName)) {
-            return milkToGLSLVars.at(varName);
-        }
-        return varName;
+        auto it = milkToGLSLVars.find(varName);
+        return (it != milkToGLSLVars.end()) ? it->second : varName;
     }
     if (isAssignment(node)) {
         return traverseNode(node->args[0]) + " = " + traverseNode(node->args[1]);
     }
+    std::string funcName = getFunctionName(node);
     if (isOperator(node)) {
-        return "(" + traverseNode(node->args[0]) + " " + getOperator(node) + " " + traverseNode(node->args[1]) + ")";
+        return "(" + traverseNode(node->args[0]) + " " + funcName + " " + traverseNode(node->args[1]) + ")";
     }
     if (isFunction(node)) {
-        std::string funcName = getFunctionName(node);
-        if (funcName == "if") {
-            return "((" + traverseNode(node->args[0]) + " != 0.0) ? (" + traverseNode(node->args[1]) + ") : (" + traverseNode(node->args[2]) + "))";
-        }
-        if (funcName == "sqr") {
-            std::string arg = traverseNode(node->args[0]);
-            return "((" + arg + ")*(" + arg + "))";
-        }
-        if (funcName == "band") {
-            return "((" + traverseNode(node->args[0]) + " != 0.0) && (" + traverseNode(node->args[1]) + " != 0.0))";
-        }
-        if (funcName == "bor") {
-            return "((" + traverseNode(node->args[0]) + " != 0.0) || (" + traverseNode(node->args[1]) + " != 0.0))";
-        }
+        if (funcName == "if") return "((" + traverseNode(node->args[0]) + " != 0.0) ? (" + traverseNode(node->args[1]) + ") : (" + traverseNode(node->args[2]) + "))";
+        if (funcName == "sqr") return "((" + traverseNode(node->args[0]) + ")*(" + traverseNode(node->args[0]) + "))";
+        if (funcName == "bnot") return "((" + traverseNode(node->args[0]) + " == 0.0) ? 1.0 : 0.0)";
+        if (funcName == "band") return "(((" + traverseNode(node->args[0]) + " != 0.0) && (" + traverseNode(node->args[1]) + " != 0.0)) ? 1.0 : 0.0)";
+        if (funcName == "bor") return "(((" + traverseNode(node->args[0]) + " != 0.0) || (" + traverseNode(node->args[1]) + " != 0.0)) ? 1.0 : 0.0)";
+
         std::string args;
         if (node->args) {
             for (int i = 0; node->args[i] != nullptr; ++i) {
@@ -207,10 +196,7 @@ std::string GLSLGenerator::traverseNode(const prjm_eval_exptreenode* node) {
 
 bool GLSLGenerator::isOperator(const prjm_eval_exptreenode* n) {
     if (!n || !n->func) return false;
-    auto it = m_func_map.find((void*)n->func);
-    if (it == m_func_map.end()) return false;
-    const auto& name = it->second;
-    return name == "+" || name == "-" || name == "*" || name == "/" || name == "%" || name == "==" || name == "!=" || name == ">" || name == ">=" || name == "<" || name == "<=";
+    return n->func == prjm_eval_func_add || n->func == prjm_eval_func_sub || n->func == prjm_eval_func_mul || n->func == prjm_eval_func_div || n->func == prjm_eval_func_mod || n->func == prjm_eval_func_equal || n->func == prjm_eval_func_notequal || n->func == prjm_eval_func_above || n->func == prjm_eval_func_aboveeq || n->func == prjm_eval_func_below || n->func == prjm_eval_func_beloweq;
 }
 bool GLSLGenerator::isFunction(const prjm_eval_exptreenode* n) {
     if (!n || !n->func) return false;
@@ -234,11 +220,7 @@ std::string GLSLGenerator::getVariableName(const prjm_eval_exptreenode* n) {
     }
     return "/* var_not_found */";
 }
-std::string GLSLGenerator::getOperator(const prjm_eval_exptreenode* n) {
-    if (!n || !n->func) return "";
-    auto it = m_func_map.find((void*)n->func);
-    return (it != m_func_map.end()) ? it->second : "";
-}
+std::string GLSLGenerator::getOperator(const prjm_eval_exptreenode* n) { return getFunctionName(n); }
 
 std::set<std::string> findUserVars(prjm_eval_compiler_context_t* ctx) {
     std::set<std::string> userVars;
@@ -266,7 +248,6 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
         std::cerr << "Error parsing per-frame code: " << (error ? error : "Unknown error")
                   << " at line " << line << ", col " << col << std::endl;
     }
-
     prjm_eval_program_t* perPixelAST = prjm_eval_compile_code(internal_context(context), perPixel.c_str());
     if (!perPixelAST) {
         int line, col;
@@ -274,7 +255,6 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
         std::cerr << "Error parsing per-pixel code: " << (error ? error : "Unknown error")
                   << " at line " << line << ", col " << col << std::endl;
     }
-
     auto userVars = findUserVars(internal_context(context));
     GLSLGenerator generator(context);
     std::string perFrameGLSL = generator.generate(perFrameAST ? perFrameAST->program : nullptr);
@@ -321,20 +301,10 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error: Could not read or parse input file: " << inputFile << "\n";
         return 1;
     }
-    std::string perFrameCode, perPixelCode;
-    auto toLower = [](std::string s) {
-        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });
-        return s;
-    };
-    const auto& values = parser.PresetValues();
-    for (const auto& pair : values) {
-        std::string lowerKey = toLower(pair.first);
-        if (lowerKey.find("per_frame_") == 0) {
-            perFrameCode += pair.second + ";";
-        } else if (lowerKey.find("per_pixel_") == 0) {
-            perPixelCode += pair.second + ";";
-        }
-    }
+
+    std::string perFrameCode = parser.GetCode("per_frame_");
+    std::string perPixelCode = parser.GetCode("per_pixel_");
+
     std::string glsl = translateToGLSL(perFrameCode, perPixelCode);
     std::ofstream out(outputFile);
     if (!out) {

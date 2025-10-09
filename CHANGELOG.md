@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2025-10-08
+
+### Added
+- Implemented a robust, AST-based translation system using the `projectm-eval` library for accurate Milkdrop to GLSL conversion.
+- Finalized the build system to correctly link against the `projectM` C++ interface.
+
+### Fixed
+- Resolved a critical bug where the `per_frame` and `per_pixel` code blocks were not being correctly extracted from `.milk` files.
+- Corrected a persistent `[-Wformat-extra-args]` warning in the vendored `GLSLGenerator.cpp` file.
+
+### Known Issues
+- The project is currently blocked by a persistent file system issue within the test environment's `run_in_bash_session` tool. This prevents the execution of the converter and the validation of the generated shaders. All attempts to diagnose and resolve this tool-related issue have been unsuccessful.
+
 ## [0.3.0] - 2025-10-08
 
 ### Added
