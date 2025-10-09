@@ -373,7 +373,28 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
     glsl += perFrameGLSL;
     glsl += "\n    // Per-pixel logic\n";
     glsl += perPixelGLSL;
-    glsl += "\n    FragColor = vec4(r, g, b, a);\n}\n";
+    glsl += R"___(
+    // Apply coordinate transformations calculated in per-pixel logic.
+    // This emulates the 'warp' part of a MilkDrop shader.
+    vec2 transformed_uv = uv - vec2(cx, cy); // Center on cx, cy
+
+    mat2 rotation_matrix = mat2(cos(rot), -sin(rot), sin(rot), cos(rot));
+    transformed_uv = rotation_matrix * transformed_uv;
+
+    transformed_uv /= zoom;
+    transformed_uv /= vec2(sx, sy);
+
+    transformed_uv += vec2(dx, dy); // Pan
+    transformed_uv += vec2(cx, cy); // Un-center
+
+)___";
+    glsl += "\n    // Final color composition\n";
+    glsl += "    FragColor = vec4(ob_r, ob_g, ob_b, ob_a);\n\n";
+    glsl += "    // In a real engine, transformed_uv would sample a feedback buffer.\n";
+    glsl += "    // To visualize the warp effect, we modulate the color by the transformed UVs.\n";
+    glsl += "    FragColor.r *= transformed_uv.x;\n";
+    glsl += "    FragColor.g *= transformed_uv.y;\n";
+    glsl += "}\n";
     return glsl;
 }
 
