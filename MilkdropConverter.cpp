@@ -373,7 +373,7 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
                 // Value from .milk file is not a float, use hardcoded default.
             }
         }
-        glsl += "uniform float u_" + pair.first + "; // {\"widget\":\"" + pair.second.widget + "\",\"default\":" + defaultValue + ",\"min\":" + pair.second.min + ",\"max\":" + pair.second.max + ",\"step\":" + pair.second.step + "}\n";
+        glsl += "uniform float u_" + pair.first + " = " + defaultValue + "; // {\"widget\":\"" + pair.second.widget + "\",\"default\":" + defaultValue + ",\"min\":" + pair.second.min + ",\"max\":" + pair.second.max + ",\"step\":" + pair.second.step + "}\n";
     }
     glsl += "\nvoid main() {\n";
     glsl += "    // Initialize local variables from uniforms\n";

@@ -19,28 +19,28 @@ uniform sampler2D iChannel2;
 uniform sampler2D iChannel3;
 
 // Preset-specific uniforms with UI annotations
-uniform float u_b; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_g; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_r; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_decay; // {"widget":"slider","default":0.98,"min":0.9,"max":1.0,"step":0.001}
-uniform float u_a; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_mystery; // {"widget":"slider","default":0.0,"min":-1.0,"max":1.0,"step":0.01}
-uniform float u_wave_a; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_rot; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_dy; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_zoomexp; // {"widget":"slider","default":1.0,"min":0.5,"max":2.0,"step":0.01}
-uniform float u_warp; // {"widget":"slider","default":0.010000,"min":0.0,"max":2.0,"step":0.01}
-uniform float u_wave_x; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_sy; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_cx; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_dx; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_cy; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_sx; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_wave_y; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_zoom; // {"widget":"slider","default":1.001600,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_wave_r; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_g; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_b; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_b = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_g = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_r = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_decay = 0.98; // {"widget":"slider","default":0.98,"min":0.9,"max":1.0,"step":0.001}
+uniform float u_a = 1.0; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_mystery = 0.0; // {"widget":"slider","default":0.0,"min":-1.0,"max":1.0,"step":0.01}
+uniform float u_wave_a = 1.0; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_rot = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_dy = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_zoomexp = 1.0; // {"widget":"slider","default":1.0,"min":0.5,"max":2.0,"step":0.01}
+uniform float u_warp = 0.010000; // {"widget":"slider","default":0.010000,"min":0.0,"max":2.0,"step":0.01}
+uniform float u_wave_x = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_sy = 1.000000; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_cx = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_dx = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_cy = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_sx = 1.000000; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_wave_y = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_zoom = 1.001600; // {"widget":"slider","default":1.001600,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_wave_r = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_g = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_b = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
 
 void main() {
     // Initialize local variables from uniforms
