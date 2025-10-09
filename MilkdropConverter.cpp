@@ -1,3 +1,10 @@
+// Dummy implementations for mutex functions required by the projectm-eval library.
+// This is a single-threaded application, so no actual locking is needed.
+extern "C" {
+void projectm_eval_memory_host_lock_mutex() {}
+void projectm_eval_memory_host_unlock_mutex() {}
+}
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -14,11 +21,11 @@
 
 // Include internal headers from projectm-eval to access AST and context structures
 extern "C" {
-#include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/api/projectm-eval.h"
-#include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/CompilerTypes.h"
-#include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/CompileContext.h"
-#include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/TreeFunctions.h"
-#include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/ExpressionTree.h"
+#include "projectm-eval.h"
+#include "projectm-eval/CompilerTypes.h"
+#include "projectm-eval/CompileContext.h"
+#include "projectm-eval/TreeFunctions.h"
+#include "projectm-eval/ExpressionTree.h"
 }
 
 // The public API uses an opaque pointer, so we must cast it to the internal type.
@@ -84,6 +91,7 @@ public:
 private:
     std::string traverseNode(const prjm_eval_exptreenode* node);
     bool isOperator(const prjm_eval_exptreenode* node);
+    bool isComparison(const prjm_eval_exptreenode* node);
     bool isFunction(const prjm_eval_exptreenode* node);
     bool isAssignment(const prjm_eval_exptreenode* node);
     bool isConstant(const prjm_eval_exptreenode* node);
@@ -93,6 +101,7 @@ private:
     std::string getOperator(const prjm_eval_exptreenode* node);
 
     std::unordered_map<void*, std::string> m_func_map;
+    std::set<void*> m_comparison_funcs;
     projectm_eval_context* m_context;
 };
 
@@ -114,6 +123,14 @@ GLSLGenerator::GLSLGenerator(projectm_eval_context* context)
     m_func_map[(void*)prjm_eval_func_below] = "<";
     m_func_map[(void*)prjm_eval_func_beloweq] = "<=";
     m_func_map[(void*)prjm_eval_func_set] = "=";
+
+    m_comparison_funcs.insert((void*)prjm_eval_func_equal);
+    m_comparison_funcs.insert((void*)prjm_eval_func_notequal);
+    m_comparison_funcs.insert((void*)prjm_eval_func_above);
+    m_comparison_funcs.insert((void*)prjm_eval_func_aboveeq);
+    m_comparison_funcs.insert((void*)prjm_eval_func_below);
+    m_comparison_funcs.insert((void*)prjm_eval_func_beloweq);
+
     m_func_map[(void*)prjm_eval_func_sin] = "sin";
     m_func_map[(void*)prjm_eval_func_cos] = "cos";
     m_func_map[(void*)prjm_eval_func_tan] = "tan";
@@ -175,14 +192,29 @@ std::string GLSLGenerator::traverseNode(const prjm_eval_exptreenode* node) {
     }
     std::string funcName = getFunctionName(node);
     if (isOperator(node)) {
+        if (isComparison(node)) {
+            return "float_from_bool((" + traverseNode(node->args[0]) + " " + funcName + " " + traverseNode(node->args[1]) + "))";
+        }
+        if (funcName == "%") {
+            return "mod(" + traverseNode(node->args[0]) + ", " + traverseNode(node->args[1]) + ")";
+        }
         return "(" + traverseNode(node->args[0]) + " " + funcName + " " + traverseNode(node->args[1]) + ")";
     }
     if (isFunction(node)) {
-        if (funcName == "if") return "((" + traverseNode(node->args[0]) + " != 0.0) ? (" + traverseNode(node->args[1]) + ") : (" + traverseNode(node->args[2]) + "))";
+        if (funcName == "if") {
+            std::string cond = traverseNode(node->args[0]);
+            // If the condition is a float_from_bool call, we can unwrap it to get the raw boolean expression.
+            if (cond.rfind("float_from_bool(", 0) == 0) {
+                std::string inner_cond = cond.substr(16, cond.length() - 17); // "float_from_bool(".length()
+                return "((" + inner_cond + ") ? (" + traverseNode(node->args[1]) + ") : (" + traverseNode(node->args[2]) + "))";
+            }
+            // Otherwise, treat it as a float and compare to 0.0
+            return "((" + cond + " != 0.0) ? (" + traverseNode(node->args[1]) + ") : (" + traverseNode(node->args[2]) + "))";
+        }
         if (funcName == "sqr") return "((" + traverseNode(node->args[0]) + ")*(" + traverseNode(node->args[0]) + "))";
-        if (funcName == "bnot") return "((" + traverseNode(node->args[0]) + " == 0.0) ? 1.0 : 0.0)";
-        if (funcName == "band") return "(((" + traverseNode(node->args[0]) + " != 0.0) && (" + traverseNode(node->args[1]) + " != 0.0)) ? 1.0 : 0.0)";
-        if (funcName == "bor") return "(((" + traverseNode(node->args[0]) + " != 0.0) || (" + traverseNode(node->args[1]) + " != 0.0)) ? 1.0 : 0.0)";
+        if (funcName == "bnot") return "float_from_bool(" + traverseNode(node->args[0]) + " == 0.0)";
+        if (funcName == "band") return "float_from_bool((" + traverseNode(node->args[0]) + " != 0.0) && (" + traverseNode(node->args[1]) + " != 0.0))";
+        if (funcName == "bor") return "float_from_bool((" + traverseNode(node->args[0]) + " != 0.0) || (" + traverseNode(node->args[1]) + " != 0.0))";
 
         std::string args;
         if (node->args) {
@@ -199,6 +231,10 @@ std::string GLSLGenerator::traverseNode(const prjm_eval_exptreenode* node) {
 bool GLSLGenerator::isOperator(const prjm_eval_exptreenode* n) {
     if (!n || !n->func) return false;
     return n->func == prjm_eval_func_add || n->func == prjm_eval_func_sub || n->func == prjm_eval_func_mul || n->func == prjm_eval_func_div || n->func == prjm_eval_func_mod || n->func == prjm_eval_func_equal || n->func == prjm_eval_func_notequal || n->func == prjm_eval_func_above || n->func == prjm_eval_func_aboveeq || n->func == prjm_eval_func_below || n->func == prjm_eval_func_beloweq;
+}
+bool GLSLGenerator::isComparison(const prjm_eval_exptreenode* n) {
+    if (!n || !n->func) return false;
+    return m_comparison_funcs.count((void*)n->func) > 0;
 }
 bool GLSLGenerator::isFunction(const prjm_eval_exptreenode* n) {
     if (!n || !n->func) return false;
@@ -315,6 +351,7 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
     projectm_eval_context_destroy(context);
 
     std::string glsl = "#version 330 core\n\nout vec4 FragColor;\nin vec2 uv;\n\n";
+    glsl += "float float_from_bool(bool b) { return b ? 1.0 : 0.0; }\n\n";
     glsl += "// Standard RaymarchVibe uniforms\n";
     glsl += "uniform float iTime;\nuniform vec2 iResolution;\nuniform float iFps;\nuniform float iFrame;\nuniform float iProgress;\nuniform vec4 iAudioBands;\nuniform vec4 iAudioBandsAtt;\n\n";
     glsl += "// Preset-specific uniforms with UI annotations\n";
