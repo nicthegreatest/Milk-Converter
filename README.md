@@ -2,7 +2,7 @@
 
 ## 1. Project Summary
 
-This document outlines the purpose, design, and build process for the Milkdrop Converter, a command-line utility designed to translate legacy MilkDrop presets (`.milk` files) into modern GLSL fragment shaders compatible with the RaymarchVibe application.
+This document outlines the purpose, design, and build process for the Milkdrop Converter, a command-line utility designed to translate legacy MilkDrop presets (`.milk` files) into modern GLSL fragment shaders compatible with the (RaymarchVibe)[https://github.com/nicthegreatest/raymarchvibe] application.
 
 ### 1.1. Session Achievements & Investigation
 
