@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2025-10-09
+
+### Fixed
+GLSL code generation to correctly handle boolean logic as floating-point numbers, which is required to match MilkDrop's behavior. The previous implementation generated GLSL `bool` types for comparisons, leading to type mismatch errors when used in expressions expecting floats.
+
+The main changes are:
+- A `float_from_bool(bool)` helper function is now added to the GLSL preamble.
+- All comparison operators (`>`, `==`, etc.) and boolean functions (`bnot`, `band`, `bor`) are now wrapped in `float_from_bool()` to ensure their result is a float (1.0 or 0.0).
+- The `if` function code generation was made smarter to "unwrap" conditions that use `float_from_bool`, avoiding redundant checks and producing cleaner GLSL.
+- The modulo operator is now correctly translated to the `mod()` function for float compatibility.
+
+Additionally, significant changes were made to the build system to resolve dependency issues:
+- The `CMakeLists.txt` was modified to build the `projectm-eval` library directly, bypassing the main `libprojectM` and its unnecessary OpenGL dependency.
+- `PresetFileParser.cpp` and its header are now compiled directly.
+- Stub functions for mutexes required by `projectm-eval` were added to resolve linker errors.
+
 ## [0.5.0] - 2025-10-09
 
 ### Fixed
