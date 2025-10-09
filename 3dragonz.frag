@@ -13,6 +13,10 @@ uniform float iFrame;
 uniform float iProgress;
 uniform vec4 iAudioBands;
 uniform vec4 iAudioBandsAtt;
+uniform sampler2D iChannel0; // Feedback buffer
+uniform sampler2D iChannel1;
+uniform sampler2D iChannel2;
+uniform sampler2D iChannel3;
 
 // Preset-specific uniforms with UI annotations
 uniform float u_b; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
@@ -22,21 +26,21 @@ uniform float u_decay; // {"widget":"slider","default":0.98,"min":0.9,"max":1.0,
 uniform float u_a; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_wave_mystery; // {"widget":"slider","default":0.0,"min":-1.0,"max":1.0,"step":0.01}
 uniform float u_wave_a; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_rot; // {"widget":"slider","default":0.0,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_dy; // {"widget":"slider","default":0.0,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_rot; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_dy; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
 uniform float u_zoomexp; // {"widget":"slider","default":1.0,"min":0.5,"max":2.0,"step":0.01}
-uniform float u_warp; // {"widget":"slider","default":1.0,"min":0.0,"max":2.0,"step":0.01}
-uniform float u_wave_x; // {"widget":"slider","default":0.5,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_sy; // {"widget":"slider","default":1.0,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_cx; // {"widget":"slider","default":0.5,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_dx; // {"widget":"slider","default":0.0,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_cy; // {"widget":"slider","default":0.5,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_sx; // {"widget":"slider","default":1.0,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_wave_y; // {"widget":"slider","default":0.5,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_zoom; // {"widget":"slider","default":1.0,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_wave_r; // {"widget":"slider","default":0.5,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_g; // {"widget":"slider","default":0.5,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_b; // {"widget":"slider","default":0.5,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_warp; // {"widget":"slider","default":0.010000,"min":0.0,"max":2.0,"step":0.01}
+uniform float u_wave_x; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_sy; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_cx; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_dx; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_cy; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_sx; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_wave_y; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_zoom; // {"widget":"slider","default":1.001600,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_wave_r; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_g; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_b; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
 
 void main() {
     // Initialize local variables from uniforms
@@ -198,10 +202,14 @@ void main() {
 
 
     // Final color composition
-    FragColor = vec4(ob_r, ob_g, ob_b, ob_a);
+    // Sample the previous frame's output (feedback buffer) with warped UVs.
+    vec4 feedback = texture(iChannel0, transformed_uv);
 
-    // In a real engine, transformed_uv would sample a feedback buffer.
-    // To visualize the warp effect, we modulate the color by the transformed UVs.
-    FragColor.r *= transformed_uv.x;
-    FragColor.g *= transformed_uv.y;
+    // Apply decay, which is essential for the classic MilkDrop fade effect.
+    feedback.rgb *= decay;
+
+    // The 'ob_' variables are for the outer border. We'll use them to tint the feedback color.
+    // A full implementation would draw waves and borders, but this is a good approximation.
+    vec4 border_color = vec4(ob_r, ob_g, ob_b, ob_a);
+    FragColor = mix(feedback, border_color, border_color.a);
 }
