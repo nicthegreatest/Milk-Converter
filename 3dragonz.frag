@@ -183,5 +183,25 @@ void main() {
     cy = (cx + ((sin(((uv.y * 3.14) * q5)) * snee) * 0.5));
     zoom = ((zoom + ((0.1 * snee) * float_from_bool(snur == 0.0))) - ((0.1 * snur) * float_from_bool(snee == 0.0)));
 
-    FragColor = vec4(r, g, b, a);
+    // Apply coordinate transformations calculated in per-pixel logic.
+    // This emulates the 'warp' part of a MilkDrop shader.
+    vec2 transformed_uv = uv - vec2(cx, cy); // Center on cx, cy
+
+    mat2 rotation_matrix = mat2(cos(rot), -sin(rot), sin(rot), cos(rot));
+    transformed_uv = rotation_matrix * transformed_uv;
+
+    transformed_uv /= zoom;
+    transformed_uv /= vec2(sx, sy);
+
+    transformed_uv += vec2(dx, dy); // Pan
+    transformed_uv += vec2(cx, cy); // Un-center
+
+
+    // Final color composition
+    FragColor = vec4(ob_r, ob_g, ob_b, ob_a);
+
+    // In a real engine, transformed_uv would sample a feedback buffer.
+    // To visualize the warp effect, we modulate the color by the transformed UVs.
+    FragColor.r *= transformed_uv.x;
+    FragColor.g *= transformed_uv.y;
 }
