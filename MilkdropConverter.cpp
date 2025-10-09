@@ -8,6 +8,7 @@
 #include <regex>
 #include <algorithm>
 #include <cctype>
+#include <clocale>
 
 #include "PresetFileParser.hpp"
 
@@ -17,6 +18,7 @@ extern "C" {
 #include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/CompilerTypes.h"
 #include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/CompileContext.h"
 #include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/TreeFunctions.h"
+#include "vendor/projectm-master/vendor/projectm-eval/projectm-eval/ExpressionTree.h"
 }
 
 // The public API uses an opaque pointer, so we must cast it to the internal type.
@@ -222,6 +224,62 @@ std::string GLSLGenerator::getVariableName(const prjm_eval_exptreenode* n) {
 }
 std::string GLSLGenerator::getOperator(const prjm_eval_exptreenode* n) { return getFunctionName(n); }
 
+// Helper function to compile a block of statements into a single AST
+prjm_eval_exptreenode* compile_statements(projectm_eval_context* ctx, const std::string& code) {
+    std::vector<prjm_eval_program_t*> programs;
+    std::stringstream ss(code);
+    std::string statement;
+
+    while (std::getline(ss, statement, ';')) {
+        // Trim leading/trailing whitespace
+        statement.erase(0, statement.find_first_not_of(" \t\n\r"));
+        statement.erase(statement.find_last_not_of(" \t\n\r") + 1);
+
+        if (statement.empty()) {
+            continue;
+        }
+
+        prjm_eval_program_t* program = prjm_eval_compile_code(internal_context(ctx), statement.c_str());
+        if (program && program->program) {
+            programs.push_back(program);
+        } else {
+            int line, col;
+            const char* error = projectm_eval_get_error(ctx, &line, &col);
+            std::cerr << "Error parsing statement '" << statement << "': " << (error ? error : "Unknown error") << " at line " << line << ", col " << col << std::endl;
+            if(program) {
+                prjm_eval_destroy_code(program);
+            }
+            // Clean up already compiled programs
+            for(auto p : programs) {
+                prjm_eval_destroy_code(p);
+            }
+            return nullptr;
+        }
+    }
+
+    if (programs.empty()) {
+        return nullptr;
+    }
+
+    // Manually create an execute_list node to combine all statements
+    prjm_eval_exptreenode* combined_ast = (prjm_eval_exptreenode*) calloc(1, sizeof(prjm_eval_exptreenode));
+    combined_ast->func = prjm_eval_func_execute_list;
+    combined_ast->args = (prjm_eval_exptreenode**) calloc(programs.size() + 1, sizeof(prjm_eval_exptreenode*));
+
+    for (size_t i = 0; i < programs.size(); ++i) {
+        combined_ast->args[i] = programs[i]->program;
+        programs[i]->program = nullptr; // Avoid double-free by nulling the pointer
+    }
+    combined_ast->args[programs.size()] = nullptr; // Null-terminate the list
+
+    // Cleanup the now-empty program containers
+    for(auto p : programs) {
+        prjm_eval_destroy_code(p);
+    }
+
+    return combined_ast;
+}
+
 std::set<std::string> findUserVars(prjm_eval_compiler_context_t* ctx) {
     std::set<std::string> userVars;
     prjm_eval_variable_entry_t* current = ctx->variables.first;
@@ -241,26 +299,19 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
         std::cerr << "Failed to create projectm-eval context." << std::endl;
         return "";
     }
-    prjm_eval_program_t* perFrameAST = prjm_eval_compile_code(internal_context(context), perFrame.c_str());
-    if (!perFrameAST) {
-        int line, col;
-        const char* error = projectm_eval_get_error(context, &line, &col);
-        std::cerr << "Error parsing per-frame code: " << (error ? error : "Unknown error")
-                  << " at line " << line << ", col " << col << std::endl;
-    }
-    prjm_eval_program_t* perPixelAST = prjm_eval_compile_code(internal_context(context), perPixel.c_str());
-    if (!perPixelAST) {
-        int line, col;
-        const char* error = projectm_eval_get_error(context, &line, &col);
-        std::cerr << "Error parsing per-pixel code: " << (error ? error : "Unknown error")
-                  << " at line " << line << ", col " << col << std::endl;
-    }
+
+    prjm_eval_exptreenode* perFrameAST = compile_statements(context, perFrame);
+    prjm_eval_exptreenode* perPixelAST = compile_statements(context, perPixel);
+
     auto userVars = findUserVars(internal_context(context));
     GLSLGenerator generator(context);
-    std::string perFrameGLSL = generator.generate(perFrameAST ? perFrameAST->program : nullptr);
-    std::string perPixelGLSL = generator.generate(perPixelAST ? perPixelAST->program : nullptr);
-    prjm_eval_destroy_code(perFrameAST);
-    prjm_eval_destroy_code(perPixelAST);
+    std::string perFrameGLSL = generator.generate(perFrameAST);
+    std::string perPixelGLSL = generator.generate(perPixelAST);
+
+    // Cleanup the combined ASTs
+    if(perFrameAST) prjm_eval_destroy_exptreenode(perFrameAST);
+    if(perPixelAST) prjm_eval_destroy_exptreenode(perPixelAST);
+
     projectm_eval_context_destroy(context);
 
     std::string glsl = "#version 330 core\n\nout vec4 FragColor;\nin vec2 uv;\n\n";
@@ -289,7 +340,9 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
     return glsl;
 }
 
+
 int main(int argc, char* argv[]) {
+    std::setlocale(LC_NUMERIC, "C");
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <input.milk> <output.frag>\n";
         return 1;
