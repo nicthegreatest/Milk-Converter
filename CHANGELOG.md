@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2025-10-09
+
+Fixes the GLSL shader conversion logic to correctly apply per-pixel transformations and use the proper color variables.
+
+The previous conversion logic had two main flaws:
+1. It calculated per-pixel transformations (zoom, rot, sx, sy, etc.) but never used them, resulting in a static image with no patterns.
+2. It used the initial uniform values for the final fragment color instead of the `ob_r`, `ob_g`, `ob_b` variables calculated in the per-frame logic.
+
+This commit corrects the `translateToGLSL` function in `MilkdropConverter.cpp` to:
+- Inject GLSL boilerplate that applies the calculated transformations to the `uv` coordinates.
+- Set the final `FragColor` using the correct `ob_` variables.
+- Modulate the final color by the transformed UVs to make the warp effect visible.
+
 ## [0.6.0] - 2025-10-09
 
 ### Fixed
