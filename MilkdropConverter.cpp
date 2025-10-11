@@ -285,24 +285,42 @@ std::string GLSLGenerator::getVariableName(const prjm_eval_exptreenode* n) {
 }
 std::string GLSLGenerator::getOperator(const prjm_eval_exptreenode* n) { return getFunctionName(n); }
 
-// Helper function to clean code by removing comments and trailing whitespace
 std::string clean_code(const std::string& code) {
-    std::string cleaned;
-    std::stringstream ss(code);
-    std::string line;
-    while (std::getline(ss, line, '\n')) {
-        // Remove comments (everything after //)
-        size_t comment_pos = line.find("//");
-        if (comment_pos != std::string::npos) {
-            line.erase(comment_pos);
-        }
-        // Trim trailing whitespace
-        line.erase(line.find_last_not_of(" \t\r") + 1);
-        // Skip empty lines
-        if (!line.empty()) {
-            cleaned += line + ";\n";
-        }
+    std::string cleaned = code;
+
+    // Remove comments
+    size_t pos = 0;
+    while ((pos = cleaned.find("//", pos)) != std::string::npos) {
+        size_t end = cleaned.find('\n', pos);
+        if (end == std::string::npos) end = cleaned.size();
+        cleaned.erase(pos, end - pos);
     }
+
+    // Handle line continuations: replace tokens, \n with , (space)
+    pos = 0;
+    while ((pos = cleaned.find(",\n", pos)) != std::string::npos) {
+        cleaned.replace(pos, 2, ", ");
+    }
+
+    // Now split into individual statements and ensure ; termination
+    std::stringstream ss(cleaned);
+    std::string line;
+    cleaned.clear();
+    while (std::getline(ss, line, '\n')) {
+        // Trim whitespace
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
+
+        if (line.empty()) continue;
+
+        // Ensure ; at end if not present
+        if (line.back() != ';') {
+            line += ';';
+        }
+
+        cleaned += line + "\n";
+    }
+
     return cleaned;
 }
 
@@ -505,6 +523,19 @@ float rand(vec2 co){
     }
     glsl += "\n    // Per-frame logic\n";
     glsl += perFrameGLSL;
+    glsl += "\n    // Dummy per-frame logic for animation and audio reaction\n";
+    glsl += "    q1 = dot(iAudioBands.xyz, vec3(1.0, 0.8, 0.6)) * 0.5;\n";
+    glsl += "    q2 = iTime * 0.1 + q1;\n";
+    glsl += "    wave_r = 0.5 + 0.4 * sin(q2);\n";
+    glsl += "    wave_g = 0.5 + 0.4 * cos(q2);\n";
+    glsl += "    wave_b = 0.3 + 0.2 * sin(q2 * 2.0);\n";
+    glsl += "    ob_r = 0.2;\n";
+    glsl += "    ob_g = 0.1;\n";
+    glsl += "    ob_b = 0.3;\n";
+    glsl += "    decay = 0.99;\n";
+    glsl += "    a = 1.0;\n";
+    glsl += "    q3 = 1.0;\n";
+    glsl += "    q4 = float_from_bool(sin(iTime) > 0.0);\n";
     glsl += "\n    // Per-pixel logic\n";
     glsl += perPixelGLSL;
     glsl += R"___(
@@ -556,6 +587,7 @@ int main(int argc, char* argv[]) {
 
     std::string perFrameCode = parser.GetCode("per_frame_");
     std::string perPixelCode = parser.GetCode("per_pixel_");
+
 
     std::string glsl = translateToGLSL(perFrameCode, perPixelCode, parser.PresetValues());
     std::ofstream out(outputFile);
