@@ -6,6 +6,10 @@ in vec2 uv;
 float float_from_bool(bool b) { return b ? 1.0 : 0.0; }
 
 
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
 // Helper function to calculate the shortest distance from a point to a line segment.
 float distance_to_line_segment(vec2 p, vec2 v, vec2 w) {
     float l2 = pow(distance(v, w), 2.0);
@@ -15,7 +19,7 @@ float distance_to_line_segment(vec2 p, vec2 v, vec2 w) {
     return distance(p, projection);
 }
 
-float draw_wave(vec2 uv, vec2 audio_data, int samples) {
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery) {
     float line_intensity = 0.0;
     float wave_scale = 0.25; // wave_scale equivalent
 
@@ -65,91 +69,91 @@ uniform sampler2D iChannel2;
 uniform sampler2D iChannel3;
 
 // Preset-specific uniforms with UI annotations
-uniform float u_zoom = 1.001600; // {"widget":"slider","default":1.001600,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_zoomexp = 1.0; // {"widget":"slider","default":1.0,"min":0.5,"max":2.0,"step":0.01}
-uniform float u_rot = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_warp = 0.010000; // {"widget":"slider","default":0.010000,"min":0.0,"max":2.0,"step":0.01}
-uniform float u_cx = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_cy = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_dx = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_dy = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_sx = 1.000000; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_sy = 1.000000; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_wave_r = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_g = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_b = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_a = 1.0; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_x = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_y = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_mystery = 0.0; // {"widget":"slider","default":0.0,"min":-1.0,"max":1.0,"step":0.01}
-uniform float u_decay = 0.997; // {"widget":"slider","default":0.997,"min":0.9,"max":1.0,"step":0.001}
-uniform float u_r = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_g = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_b = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_a = 1.0; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ob_size = 0.005000; // {"widget":"slider","default":0.005000,"min":0.0,"max":0.1,"step":0.001}
-uniform float u_ob_r = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ob_g = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ob_b = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ob_a = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ib_size = 0.005000; // {"widget":"slider","default":0.005000,"min":0.0,"max":0.1,"step":0.001}
-uniform float u_ib_r = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ib_g = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ib_b = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ib_a = 0.900000; // {"widget":"slider","default":0.900000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_mv_b = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_mv_dy = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_mv_dx = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
 uniform float u_mv_x = 12.0; // {"widget":"slider","default":12.0,"min":0.0,"max":64.0,"step":1.0}
 uniform float u_mv_y = 9.0; // {"widget":"slider","default":9.0,"min":0.0,"max":48.0,"step":1.0}
-uniform float u_mv_dx = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_mv_dy = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_ib_b = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_g = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_b = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_g = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_r = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_y = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_sx = 1.000000; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_zoom = 1.001600; // {"widget":"slider","default":1.001600,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_cy = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_sy = 1.000000; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
 uniform float u_mv_l = 0.850000; // {"widget":"slider","default":0.850000,"min":0.0,"max":2.0,"step":0.01}
-uniform float u_mv_r = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_x = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_cx = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_warp = 0.010000; // {"widget":"slider","default":0.010000,"min":0.0,"max":2.0,"step":0.01}
+uniform float u_zoomexp = 1.0; // {"widget":"slider","default":1.0,"min":0.5,"max":2.0,"step":0.01}
+uniform float u_dy = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
 uniform float u_mv_g = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_mv_b = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_rot = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_wave_a = 1.0; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_a = 1.0; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ob_g = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_decay = 0.98; // {"widget":"slider","default":0.98,"min":0.9,"max":1.0,"step":0.001}
+uniform float u_r = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ob_a = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_dx = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
+uniform float u_g = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_b = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_mystery = 0.0; // {"widget":"slider","default":0.0,"min":-1.0,"max":1.0,"step":0.01}
+uniform float u_ob_size = 0.005000; // {"widget":"slider","default":0.005000,"min":0.0,"max":0.1,"step":0.001}
+uniform float u_ob_r = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_mv_r = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ob_b = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_a = 0.900000; // {"widget":"slider","default":0.900000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_size = 0.005000; // {"widget":"slider","default":0.005000,"min":0.0,"max":0.1,"step":0.001}
 uniform float u_mv_a = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_r = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
 
 void main() {
     // Initialize local variables from uniforms
-    float zoom = u_zoom;
-    float zoomexp = u_zoomexp;
-    float rot = u_rot;
-    float warp = u_warp;
-    float cx = u_cx;
-    float cy = u_cy;
-    float dx = u_dx;
-    float dy = u_dy;
-    float sx = u_sx;
-    float sy = u_sy;
-    float wave_r = u_wave_r;
-    float wave_g = u_wave_g;
-    float wave_b = u_wave_b;
-    float wave_a = u_wave_a;
-    float wave_x = u_wave_x;
-    float wave_y = u_wave_y;
-    float wave_mystery = u_wave_mystery;
-    float decay = u_decay;
-    float r = u_r;
-    float g = u_g;
-    float b = u_b;
-    float a = u_a;
-    float ob_size = u_ob_size;
-    float ob_r = u_ob_r;
-    float ob_g = u_ob_g;
-    float ob_b = u_ob_b;
-    float ob_a = u_ob_a;
-    float ib_size = u_ib_size;
-    float ib_r = u_ib_r;
-    float ib_g = u_ib_g;
-    float ib_b = u_ib_b;
-    float ib_a = u_ib_a;
+    float mv_b = u_mv_b;
+    float mv_dy = u_mv_dy;
+    float mv_dx = u_mv_dx;
     float mv_x = u_mv_x;
     float mv_y = u_mv_y;
-    float mv_dx = u_mv_dx;
-    float mv_dy = u_mv_dy;
+    float ib_b = u_ib_b;
+    float ib_g = u_ib_g;
+    float wave_b = u_wave_b;
+    float wave_g = u_wave_g;
+    float wave_r = u_wave_r;
+    float wave_y = u_wave_y;
+    float sx = u_sx;
+    float zoom = u_zoom;
+    float cy = u_cy;
+    float sy = u_sy;
     float mv_l = u_mv_l;
-    float mv_r = u_mv_r;
+    float wave_x = u_wave_x;
+    float cx = u_cx;
+    float warp = u_warp;
+    float zoomexp = u_zoomexp;
+    float dy = u_dy;
     float mv_g = u_mv_g;
-    float mv_b = u_mv_b;
+    float rot = u_rot;
+    float wave_a = u_wave_a;
+    float a = u_a;
+    float ob_g = u_ob_g;
+    float decay = u_decay;
+    float r = u_r;
+    float ob_a = u_ob_a;
+    float dx = u_dx;
+    float g = u_g;
+    float b = u_b;
+    float wave_mystery = u_wave_mystery;
+    float ob_size = u_ob_size;
+    float ob_r = u_ob_r;
+    float mv_r = u_mv_r;
+    float ob_b = u_ob_b;
+    float ib_a = u_ib_a;
+    float ib_size = u_ib_size;
     float mv_a = u_mv_a;
+    float ib_r = u_ib_r;
 
     // State variables
     float q1 = 0.0;
@@ -292,6 +296,6 @@ void main() {
 
     // Additive blending for waves and shapes
     vec4 wave_color = vec4(wave_r, wave_g, wave_b, wave_a);
-    float wave_intensity = draw_wave(uv, iAudioBands.xy, 128) + draw_wave(uv, iAudioBands.zw, 128);
+    float wave_intensity = draw_wave(uv, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery) + draw_wave(uv, iAudioBands.zw, 128, wave_x, wave_y, wave_mystery);
     FragColor = mix(FragColor, wave_color, wave_intensity * wave_a);
 }
