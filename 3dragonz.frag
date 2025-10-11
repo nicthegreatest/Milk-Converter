@@ -69,6 +69,7 @@ uniform sampler2D iChannel2;
 uniform sampler2D iChannel3;
 
 // Preset-specific uniforms with UI annotations
+uniform float u_echo_alpha = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_mv_b = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_mv_dy = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
 uniform float u_mv_dx = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
@@ -76,6 +77,7 @@ uniform float u_mv_x = 12.0; // {"widget":"slider","default":12.0,"min":0.0,"max
 uniform float u_mv_y = 9.0; // {"widget":"slider","default":9.0,"min":0.0,"max":48.0,"step":1.0}
 uniform float u_ib_b = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_ib_g = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_echo_zoom = 1.0; // {"widget":"slider","default":1.0,"min":0.5,"max":2.0,"step":0.01}
 uniform float u_wave_b = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_wave_g = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_wave_r = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
@@ -103,6 +105,7 @@ uniform float u_g = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0
 uniform float u_b = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_wave_mystery = 0.0; // {"widget":"slider","default":0.0,"min":-1.0,"max":1.0,"step":0.01}
 uniform float u_ob_size = 0.005000; // {"widget":"slider","default":0.005000,"min":0.0,"max":0.1,"step":0.001}
+uniform float u_echo_orient = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":3.0,"step":1.0}
 uniform float u_ob_r = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_mv_r = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_ob_b = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
@@ -113,6 +116,7 @@ uniform float u_ib_r = 0.000000; // {"widget":"slider","default":0.000000,"min":
 
 void main() {
     // Initialize local variables from uniforms
+    float echo_alpha = u_echo_alpha;
     float mv_b = u_mv_b;
     float mv_dy = u_mv_dy;
     float mv_dx = u_mv_dx;
@@ -120,6 +124,7 @@ void main() {
     float mv_y = u_mv_y;
     float ib_b = u_ib_b;
     float ib_g = u_ib_g;
+    float echo_zoom = u_echo_zoom;
     float wave_b = u_wave_b;
     float wave_g = u_wave_g;
     float wave_r = u_wave_r;
@@ -147,6 +152,7 @@ void main() {
     float b = u_b;
     float wave_mystery = u_wave_mystery;
     float ob_size = u_ob_size;
+    float echo_orient = u_echo_orient;
     float ob_r = u_ob_r;
     float mv_r = u_mv_r;
     float ob_b = u_ob_b;
@@ -276,6 +282,7 @@ void main() {
     mat2 rotation_matrix = mat2(cos(rot), -sin(rot), sin(rot), cos(rot));
     transformed_uv = rotation_matrix * transformed_uv;
 
+    transformed_uv *= warp;
     transformed_uv /= zoom;
     transformed_uv /= vec2(sx, sy);
 
