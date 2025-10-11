@@ -233,6 +233,7 @@ std::string GLSLGenerator::traverseNode(const prjm_eval_exptreenode* node) {
             return "((" + cond + " != 0.0) ? (" + traverseNode(node->args[1]) + ") : (" + traverseNode(node->args[2]) + "))";
         }
         if (funcName == "sqr") return "((" + traverseNode(node->args[0]) + ")*(" + traverseNode(node->args[0]) + "))";
+        if (funcName == "rand") return "(rand(uv) * " + traverseNode(node->args[0]) + ")";
         if (funcName == "bnot") return "float_from_bool(" + traverseNode(node->args[0]) + " == 0.0)";
         if (funcName == "band") return "float_from_bool((" + traverseNode(node->args[0]) + " != 0.0) && (" + traverseNode(node->args[1]) + " != 0.0))";
         if (funcName == "bor") return "float_from_bool((" + traverseNode(node->args[0]) + " != 0.0) || (" + traverseNode(node->args[1]) + " != 0.0))";
@@ -376,7 +377,7 @@ float distance_to_line_segment(vec2 p, vec2 v, vec2 w) {
     return distance(p, projection);
 }
 
-float draw_wave(vec2 uv, vec2 audio_data, int samples) {
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery) {
     float line_intensity = 0.0;
     float wave_scale = 0.25; // wave_scale equivalent
 
@@ -439,6 +440,11 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
 
     std::string glsl = "#version 330 core\n\nout vec4 FragColor;\nin vec2 uv;\n\n";
     glsl += "float float_from_bool(bool b) { return b ? 1.0 : 0.0; }\n\n";
+    glsl += R"___(
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+)___";
     glsl += waveformGLSL;
     glsl += "\n// Standard RaymarchVibe uniforms\n";
     glsl += "uniform float iTime;\nuniform vec2 iResolution;\nuniform float iFps;\nuniform float iFrame;\nuniform float iProgress;\nuniform vec4 iAudioBands;\nuniform vec4 iAudioBandsAtt;\n";
@@ -501,7 +507,7 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
     glsl += "    FragColor = mix(feedback, border_color, border_color.a);\n\n";
     glsl += "    // Additive blending for waves and shapes\n";
     glsl += "    vec4 wave_color = vec4(wave_r, wave_g, wave_b, wave_a);\n";
-    glsl += "    float wave_intensity = draw_wave(uv, iAudioBands.xy, 128) + draw_wave(uv, iAudioBands.zw, 128);\n";
+    glsl += "    float wave_intensity = draw_wave(uv, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery) + draw_wave(uv, iAudioBands.zw, 128, wave_x, wave_y, wave_mystery);\n";
     glsl += "    FragColor = mix(FragColor, wave_color, wave_intensity * wave_a);\n";
     glsl += "}\n";
     return glsl;
