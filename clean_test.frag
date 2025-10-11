@@ -70,49 +70,49 @@ uniform sampler2D iChannel3;
 
 // Preset-specific uniforms with UI annotations
 uniform float u_echo_alpha = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_mv_b = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_mv_b = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_mv_dy = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
 uniform float u_mv_dx = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
 uniform float u_mv_x = 12.0; // {"widget":"slider","default":12.0,"min":0.0,"max":64.0,"step":1.0}
 uniform float u_mv_y = 9.0; // {"widget":"slider","default":9.0,"min":0.0,"max":48.0,"step":1.0}
-uniform float u_ib_b = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ib_g = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_b = 0.250000; // {"widget":"slider","default":0.250000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_g = 0.450000; // {"widget":"slider","default":0.450000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_echo_zoom = 1.0; // {"widget":"slider","default":1.0,"min":0.5,"max":2.0,"step":0.01}
 uniform float u_wave_b = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_wave_g = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_wave_r = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_wave_r = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_wave_y = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_sx = 1.000000; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_zoom = 1.001600; // {"widget":"slider","default":1.001600,"min":0.5,"max":1.5,"step":0.01}
+uniform float u_zoom = 1.000223; // {"widget":"slider","default":1.000223,"min":0.5,"max":1.5,"step":0.01}
 uniform float u_cy = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_sy = 1.000000; // {"widget":"slider","default":1.000000,"min":0.5,"max":1.5,"step":0.01}
-uniform float u_mv_l = 0.850000; // {"widget":"slider","default":0.850000,"min":0.0,"max":2.0,"step":0.01}
+uniform float u_mv_l = 2.500000; // {"widget":"slider","default":2.500000,"min":0.0,"max":2.0,"step":0.01}
 uniform float u_wave_x = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_cx = 0.500000; // {"widget":"slider","default":0.500000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_warp = 0.010000; // {"widget":"slider","default":0.010000,"min":0.0,"max":2.0,"step":0.01}
+uniform float u_warp = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":2.0,"step":0.01}
 uniform float u_zoomexp = 1.0; // {"widget":"slider","default":1.0,"min":0.5,"max":2.0,"step":0.01}
 uniform float u_dy = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
-uniform float u_mv_g = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_mv_g = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_rot = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
 uniform float u_wave_a = 1.0; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_a = 1.0; // {"widget":"slider","default":1.0,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_ob_g = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_decay = 0.98; // {"widget":"slider","default":0.98,"min":0.9,"max":1.0,"step":0.001}
 uniform float u_r = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ob_a = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ob_a = 0.060000; // {"widget":"slider","default":0.060000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_dx = 0.000000; // {"widget":"slider","default":0.000000,"min":-0.1,"max":0.1,"step":0.001}
 uniform float u_g = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_b = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_wave_mystery = 0.0; // {"widget":"slider","default":0.0,"min":-1.0,"max":1.0,"step":0.01}
-uniform float u_ob_size = 0.005000; // {"widget":"slider","default":0.005000,"min":0.0,"max":0.1,"step":0.001}
+uniform float u_ob_size = 0.100000; // {"widget":"slider","default":0.100000,"min":0.0,"max":0.1,"step":0.001}
 uniform float u_echo_orient = 0.0; // {"widget":"slider","default":0.0,"min":0.0,"max":3.0,"step":1.0}
-uniform float u_ob_r = 1.000000; // {"widget":"slider","default":1.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_mv_r = 0.499900; // {"widget":"slider","default":0.499900,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ob_r = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_mv_r = 0.060000; // {"widget":"slider","default":0.060000,"min":0.0,"max":1.0,"step":0.01}
 uniform float u_ob_b = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ib_a = 0.900000; // {"widget":"slider","default":0.900000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ib_size = 0.005000; // {"widget":"slider","default":0.005000,"min":0.0,"max":0.1,"step":0.001}
-uniform float u_mv_a = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
-uniform float u_ib_r = 0.000000; // {"widget":"slider","default":0.000000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_a = 0.290000; // {"widget":"slider","default":0.290000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_size = 0.035000; // {"widget":"slider","default":0.035000,"min":0.0,"max":0.1,"step":0.001}
+uniform float u_mv_a = 0.200000; // {"widget":"slider","default":0.200000,"min":0.0,"max":1.0,"step":0.01}
+uniform float u_ib_r = 0.250000; // {"widget":"slider","default":0.250000,"min":0.0,"max":1.0,"step":0.01}
 
 void main() {
     // Initialize local variables from uniforms
@@ -202,92 +202,64 @@ void main() {
     float t6 = 0.0;
     float t7 = 0.0;
     float t8 = 0.0;
-    float bblock = 0.0;
-    float bpulse = 0.0;
-    float bres = 0.0;
-    float bth = 0.0;
-    float ccl = 0.0;
-    float grid = 0.0;
+    float bccl = 0.0;
+    float beat = 0.0;
+    float beatfreq = 0.0;
+    float bt = 0.0;
+    float btblock = 0.0;
+    float dle = 0.0;
+    float dqv = 0.0;
+    float eo = 0.0;
+    float hccp = 0.0;
+    float lastbeat = 0.0;
+    float lastpulse = 0.0;
     float le = 0.0;
-    float mblock = 0.0;
-    float mod_state = 0.0;
-    float mpulse = 0.0;
-    float mres = 0.0;
-    float mth = 0.0;
+    float leccl = 0.0;
     float pulse = 0.0;
-    float snee = 0.0;
-    float snur = 0.0;
-    float tblock = 0.0;
-    float tpulse = 0.0;
-    float tres = 0.0;
-    float tth = 0.0;
+    float pulsefreq = 0.0;
+    float th = 0.0;
+    float thccl = 0.0;
 
     // Per-frame logic
-    warp = 0.0;
-    le = (1.5 + (2.0 * sin(iAudioBandsAtt.x)));
-    bpulse = float_from_bool((float_from_bool((le > bth)) != 0.0) && (float_from_bool(((le - bth) > bblock)) != 0.0));
-    bblock = (le - bth);
-    bth = (((le > bth)) ? (((le + (114.0 / (le + 10.0))) - 7.407)) : (((bth + ((bth * 0.07) / (bth - 12.0))) + ((float_from_bool((bth < 2.7)) * 0.1) * (2.7 - bth)))));
-    bth = (((bth > 6.0)) ? (6.0) : (bth));
-    bres = ((bpulse * sin((pulse + (le * 0.5)))) + (float_from_bool(bpulse == 0.0) * bres));
-    le = (1.5 + (2.0 * sin(iAudioBandsAtt.z)));
-    tpulse = float_from_bool((float_from_bool((le > tth)) != 0.0) && (float_from_bool(((le - tth) > tblock)) != 0.0));
-    tblock = (le - tth);
-    tth = (((le > tth)) ? (((le + (114.0 / (le + 10.0))) - 7.407)) : (((tth + ((tth * 0.07) / (tth - 12.0))) + ((float_from_bool((tth < 2.7)) * 0.1) * (2.7 - tth)))));
-    tth = (((tth > 6.0)) ? (6.0) : (tth));
-    tres = ((tpulse * sin((pulse + (le * 0.5)))) + (float_from_bool(tpulse == 0.0) * tres));
-    le = (1.5 + (2.0 * sin(iAudioBandsAtt.y)));
-    mpulse = float_from_bool((float_from_bool((le > mth)) != 0.0) && (float_from_bool(((le - mth) > mblock)) != 0.0));
-    mblock = (le - mth);
-    mth = (((le > mth)) ? (((le + (114.0 / (le + 10.0))) - 7.407)) : (((mth + ((mth * 0.07) / (mth - 12.0))) + ((float_from_bool((mth < 2.7)) * 0.1) * (2.7 - mth)))));
-    mth = (((mth > 6.0)) ? (6.0) : (mth));
-    mres = ((mpulse * sin((pulse + (le * 0.5)))) + (float_from_bool(mpulse == 0.0) * mres));
-    pulse = (((abs(pulse) > 3.14)) ? (-3.14) : ((pulse + (((bth + mth) + tth) * 0.003))));
-    q1 = bres;
-    q2 = tres;
-    q3 = mres;
-    q4 = sin(pulse);
-    mod_state = (((float_from_bool((q1 > 0.0)) + float_from_bool((q2 > 0.0))) + float_from_bool((q3 > 0.0))) * (1.0 + float_from_bool((q4 > 0.0))));
-    ccl = (((ccl + tpulse) + mpulse) - bpulse);
-    q5 = cos((pulse * (0.5 + (0.1 * mod_state))));
-    q6 = sin((pulse * (0.5 + pow(0.25, mod_state))));
-    q7 = mod_state;
-    q8 = ccl;
-    ob_r = (0.5 + (0.5 * cos((q1 + q7))));
-    ob_g = (0.5 + (0.5 * cos(((q2 * 3.14) + q7))));
-    ob_b = (0.5 + (0.5 * cos(((q3 * 2.0) + sin((iTime * 0.0816))))));
-    ib_size = (0.025 + (0.02 * q2));
-    ob_size = ((0.03 + (0.02 * q3)) - (0.002 * q7));
-    wave_r = (0.5 + (0.5 * sin(((q1 * q7) + (iTime * 2.183)))));
-    wave_g = (0.5 + (0.5 * sin(((q2 * 3.0) + (iTime * 1.211)))));
-    wave_b = (0.5 + (0.5 * sin((q3 + (iTime * 1.541)))));
-    decay = ((0.997 + (0.0015 * q3)) + (0.0015 * q1));
-    ob_a = (0.8 + (0.2 * q2));
-
-    // Dummy per-frame logic for animation and audio reaction
-    q1 = dot(iAudioBands.xyz, vec3(1.0, 0.8, 0.6)) * 0.5;
-    q2 = iTime * 0.1 + q1;
-    wave_r = 0.5 + 0.4 * sin(q2);
-    wave_g = 0.5 + 0.4 * cos(q2);
-    wave_b = 0.3 + 0.2 * sin(q2 * 2.0);
-    ob_r = 0.2;
-    ob_g = 0.1;
-    ob_b = 0.3;
-    decay = 0.99;
-    a = 1.0;
-    q3 = 1.0;
-    q4 = float_from_bool(sin(iTime) > 0.0);
+    le = (((1.4 * iAudioBandsAtt.x) + (0.1 * iAudioBands.x)) + (0.5 * iAudioBands.z));
+    pulse = float_from_bool((le > th));
+    pulsefreq = (((pulsefreq == 0.0)) ? (2.0) : (((pulse != 0.0) ? (((0.8 * pulsefreq) + (0.2 * (iTime - lastpulse)))) : (pulsefreq))));
+    lastpulse = ((pulse != 0.0) ? (iTime) : (lastpulse));
+    bt = ((iTime - lastbeat) / ((0.5 * beatfreq) + (0.5 * pulsefreq)));
+    hccp = ((0.03 / (bt + 0.2)) + (0.5 * (((float_from_bool((bt > 0.8)) != 0.0) && (float_from_bool((bt < 1.2)) != 0.0)) ? ((pow(sin(((bt - 1.0) * 7.854)), 4.0) - 1.0)) : (0.0))));
+    beat = float_from_bool((float_from_bool((le > (th + hccp))) != 0.0) && (btblock != 0.0));
+    btblock = (1.0 - float_from_bool((le > (th + hccp))));
+    lastbeat = ((beat != 0.0) ? (iTime) : (lastbeat));
+    beatfreq = (((beatfreq == 0.0)) ? (2.0) : (((beat != 0.0) ? (((0.8 * beatfreq) + (0.2 * (iTime - lastbeat)))) : (beatfreq))));
+    th = (((le > th)) ? (((le + (114.0 / (le + 10.0))) - 7.407)) : (((th + ((th * 0.07) / (th - 12.0))) + ((float_from_bool((th < 2.7)) * 0.1) * (2.7 - th)))));
+    th = (((th > 6.0)) ? (6.0) : (th));
+    thccl = (thccl + (th - 2.5144));
+    q1 = le;
+    q2 = (thccl + (0.2 * leccl));
+    leccl = (leccl + (dle * le));
+    dle = ((beat != 0.0) ? ((dle)) : (dle));
+    bccl = (bccl + beat);
+    wave_r = ((0.1 + (0.8 * ((sin((0.011 * thccl)))*(sin((0.011 * thccl)))))) + (0.1 * sin((leccl * 0.061))));
+    wave_g = ((0.1 + (0.8 * ((sin((0.013 * thccl)))*(sin((0.013 * thccl)))))) + (0.1 * cos((leccl * 0.067))));
+    wave_b = ((0.1 + (0.8 * ((cos((0.017 * thccl)))*(cos((0.017 * thccl)))))) + (0.1 * sin((leccl * 0.065))));
+    ib_r = (ib_r + (0.1 * sin(((1.3 * iTime) + (0.012 * leccl)))));
+    ib_g = (ib_g + (0.1 * sin(((1.7 * iTime) + (0.019 * leccl)))));
+    ib_b = (ib_b + (0.1 * sin(((1.9 * iTime) + (0.017 * leccl)))));
+    mv_r = (0.5 * (ib_r + wave_r));
+    mv_g = (0.5 * (ib_g + wave_g));
+    mv_b = (0.5 * (ib_b + wave_b));
+    mv_a = (0.5 * ((sin(((0.01 * leccl) + bccl)))*(sin(((0.01 * leccl) + bccl)))));
+    echo_alpha = (0.5 + (0.2 * cos(((0.07 * leccl) + (0.02 * thccl)))));
+    eo = (((float_from_bool((mod(bccl, 3.0) == 0.0)) != 0.0) && (beat != 0.0)) ? ((rand(uv) * 4.0)) : (eo));
+    q3 = ((float_from_bool((eo == 2.0)) + float_from_bool((eo == 1.0))) * float_from_bool((mod(bccl, 2.0) == 0.0)));
+    q4 = ((float_from_bool((eo == 0.0)) + float_from_bool((eo == 3.0))) * float_from_bool((mod(bccl, 2.0) == 0.0)));
+    echo_orient = eo;
 
     // Per-pixel logic
-    snee = float_from_bool(((float_from_bool(((sin(atan(uv.y - 0.5, uv.x - 0.5)) - uv.x) > 0.5)) * float_from_bool((q2 > 0.0))) + (float_from_bool(((uv.y - cos(atan(uv.y - 0.5, uv.x - 0.5))) > 0.5)) * float_from_bool((q1 > 0.0)))) == 0.0);
-    snur = float_from_bool(((float_from_bool((uv.x < 0.5)) * float_from_bool((q3 > 0.0))) + (float_from_bool((uv.y < 0.5)) * float_from_bool((q7 < 4.0)))) == 0.0);
-    grid = sin(((sin(((uv.y * 6.28) * q2)), sin(((uv.x * 6.28) * q6))) * (10.0 + q7)));
-    rot = (((float_from_bool((float_from_bool((uv.x > 0.5)) + (uv.y * 0.0)) == 0.0) * cos((length(uv - vec2(0.5)) + ((3.14 * (((grid > 0.0)) ? (snur) : (float_from_bool(snur == 0.0)))) * (0.5 + (0.5 * sin(((length(uv - vec2(0.5)) * 3.14) * q1)))))))) * q6) * 0.3);
-    sx = (sx - ((float_from_bool((snee != 0.0) || (snur != 0.0)) * cos((uv.y * q2))) * 0.05));
-    sy = (sy - ((float_from_bool((float_from_bool(snee == 0.0) != 0.0) || (snur != 0.0)) * cos((uv.x * q1))) * 0.03));
-    cx = (cx + ((sin(((uv.x * 3.14) * q6)) * snur) * 0.45));
-    cy = (cx + ((sin(((uv.y * 3.14) * q5)) * snee) * 0.5));
-    zoom = ((zoom + ((0.1 * snee) * float_from_bool(snur == 0.0))) - ((0.1 * snur) * float_from_bool(snee == 0.0)));
+    dqv = (float_from_bool((uv.x > 0.5)) - float_from_bool((uv.y > 0.5)));
+    rot = sin(((sin(((length(uv - vec2(0.5)) * (13.0 + (5.0 * sin((0.01 * q2))))) + (0.06 * q2))) * q1) * 0.01));
+    zoom = (1.0 + ((((q3 != 0.0) ? (dqv) : (1.0)) * 0.1) * sin(((7.0 * atan(uv.y - 0.5, uv.x - 0.5)) + (0.03 * q2)))));
+    zoom = ((q4 != 0.0) ? ((((length(uv - vec2(0.5)) < (0.8 * ((sin((0.016 * q2)))*(sin((0.016 * q2))))))) ? ((0.75 + (0.4 * cos((0.021 * q2))))) : (zoom))) : (zoom));
 
     // Apply coordinate transformations calculated in per-pixel logic.
     // This emulates the 'warp' part of a MilkDrop shader.
@@ -306,7 +278,8 @@ void main() {
 
     // Final color composition
     // Sample the previous frame's output (feedback buffer) with warped UVs.
-    vec4 feedback = texture(iChannel0, transformed_uv);
+vec2 clamped_uv = clamp(transformed_uv, 0.0, 1.0);
+vec4 feedback = texture(iChannel0, clamped_uv);
 
     // Apply decay, which is essential for the classic MilkDrop fade effect.
     feedback.rgb *= decay;
