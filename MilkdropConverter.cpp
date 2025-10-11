@@ -505,19 +505,6 @@ float rand(vec2 co){
     }
     glsl += "\n    // Per-frame logic\n";
     glsl += perFrameGLSL;
-    glsl += "\n    // Dummy per-frame logic for animation and audio reaction\n";
-    glsl += "    q1 = dot(iAudioBands.xyz, vec3(1.0, 0.8, 0.6)) * 0.5;\n";
-    glsl += "    q2 = iTime * 0.1 + q1;\n";
-    glsl += "    wave_r = 0.5 + 0.4 * sin(q2);\n";
-    glsl += "    wave_g = 0.5 + 0.4 * cos(q2);\n";
-    glsl += "    wave_b = 0.3 + 0.2 * sin(q2 * 2.0);\n";
-    glsl += "    ob_r = 0.2;\n";
-    glsl += "    ob_g = 0.1;\n";
-    glsl += "    ob_b = 0.3;\n";
-    glsl += "    decay = 0.99;\n";
-    glsl += "    a = 1.0;\n";
-    glsl += "    q3 = 1.0;\n";
-    glsl += "    q4 = float_from_bool(sin(iTime) > 0.0);\n";
     glsl += "\n    // Per-pixel logic\n";
     glsl += perPixelGLSL;
     glsl += R"___(
