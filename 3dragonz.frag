@@ -264,6 +264,20 @@ void main() {
     decay = ((0.997 + (0.0015 * q3)) + (0.0015 * q1));
     ob_a = (0.8 + (0.2 * q2));
 
+    // Dummy per-frame logic for animation and audio reaction
+    q1 = dot(iAudioBands.xyz, vec3(1.0, 0.8, 0.6)) * 0.5;
+    q2 = iTime * 0.1 + q1;
+    wave_r = 0.5 + 0.4 * sin(q2);
+    wave_g = 0.5 + 0.4 * cos(q2);
+    wave_b = 0.3 + 0.2 * sin(q2 * 2.0);
+    ob_r = 0.2;
+    ob_g = 0.1;
+    ob_b = 0.3;
+    decay = 0.99;
+    a = 1.0;
+    q3 = 1.0;
+    q4 = float_from_bool(sin(iTime) > 0.0);
+
     // Per-pixel logic
     snee = float_from_bool(((float_from_bool(((sin(atan(uv.y - 0.5, uv.x - 0.5)) - uv.x) > 0.5)) * float_from_bool((q2 > 0.0))) + (float_from_bool(((uv.y - cos(atan(uv.y - 0.5, uv.x - 0.5))) > 0.5)) * float_from_bool((q1 > 0.0)))) == 0.0);
     snur = float_from_bool(((float_from_bool((uv.x < 0.5)) * float_from_bool((q3 > 0.0))) + (float_from_bool((uv.y < 0.5)) * float_from_bool((q7 < 4.0)))) == 0.0);
