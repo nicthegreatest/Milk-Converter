@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2025-10-11
+
+### Added
+- **Complete per_frame Logic Conversion:** Fixed the projectM parser to properly handle complex, multi-line MilkDrop expressions by addressing a critical AST-overwriting bug in `prjm_eval_compiler_add_instruction`. Implemented `clean_code()` improvements for line continuation handling, enabling full translation of beat detection, color modulation, and dynamic parameter calculations from MilkDrop presets.
+
+### Fixed
+- **ProjectM Evaluator Grammar Fix:** Removed faulty subtraction-based naming optimization that caused multi-statement expressions to be lost, restoring full per_frame semantic accuracy.
+- **Multi-line Expression Processing:** Enhanced comment removal and line continuation logic to preserve nested MilkDrop conditionals like `pulsefreq=if(equal(pulsefreq,0),2,if(...))`.
+- **Accurate per_frame Variables:** Now correctly translates audio-reactive calculations, state management, and time-based animations from MilkDrop's expression language.
+- **Dummy Code Removal:** Eliminated placeholder per_frame implementations, deploying full authentic preset logic.
+
+### Known Issues
+- RaymarchVibe integration requires debugging - converted shaders load but display white screen, likely due to feedback buffer initialization or texture sampling out-of-bounds. Clamping fixes applied, but lighting/audio reactivity may need feedback loop debugging.
+
 ## [0.7.0] - 2025-10-10
 
 ### Added
