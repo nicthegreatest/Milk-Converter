@@ -102,6 +102,9 @@ const std::unordered_map<std::string, UniformControl> uniformControls = {
     {"mv_g", {"1.0", "slider", "0.0", "1.0", "0.01"}},
     {"mv_b", {"1.0", "slider", "0.0", "1.0", "0.01"}},
     {"mv_a", {"0.0", "slider", "0.0", "1.0", "0.01"}},
+    {"echo_zoom", {"1.0", "slider", "0.5", "2.0", "0.01"}},
+    {"echo_alpha", {"0.0", "slider", "0.0", "1.0", "0.01"}},
+    {"echo_orient", {"0.0", "slider", "0.0", "3.0", "1.0"}},
 };
 
 class GLSLGenerator {
@@ -490,6 +493,7 @@ float rand(vec2 co){
     mat2 rotation_matrix = mat2(cos(rot), -sin(rot), sin(rot), cos(rot));
     transformed_uv = rotation_matrix * transformed_uv;
 
+    transformed_uv *= warp;
     transformed_uv /= zoom;
     transformed_uv /= vec2(sx, sy);
 
