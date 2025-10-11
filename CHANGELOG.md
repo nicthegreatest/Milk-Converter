@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2025-10-10
+
+### Added
+- **Built-in Waveform Rendering:** The converter now implements rendering for MilkDrop's built-in waveforms. This is a major step towards full preset compatibility.
+    - The initial implementation supports `nWaveMode=6` (Line Wave), as seen in presets like `3dragonz.milk`.
+    - A `draw_wave` function is now generated in the GLSL shader, which replicates the vertex generation logic from the original projectM C++ source code.
+    - The final fragment color is now a composite of the feedback buffer, the outer border color, and the newly rendered waveform, all blended additively.
+
 ## [0.6.3] - 2025-10-09
 
 This commit significantly improves the Milkdrop to GLSL converter to produce shaders that are fully compatible with the RaymarchVibe application.
