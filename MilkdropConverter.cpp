@@ -331,6 +331,70 @@ std::set<std::string> findUserVars(prjm_eval_compiler_context_t* ctx) {
     return userVars;
 }
 
+std::string generateWaveformGLSL(const libprojectM::PresetFileParser::ValueMap& presetValues) {
+    // For now, we only support nWaveMode=6, as found in 3dragonz.milk
+    int nWaveMode = 6;
+    auto it = presetValues.find("nWaveMode");
+    if (it != presetValues.end()) {
+        try {
+            nWaveMode = std::stoi(it->second);
+        } catch (const std::logic_error& e) {
+            // ignore
+        }
+    }
+
+    if (nWaveMode != 6) {
+        return "float draw_wave(vec2 uv, vec2 audio_data, int samples) { return 0.0; }\n";
+    }
+
+    return R"___(
+// Helper function to calculate the shortest distance from a point to a line segment.
+float distance_to_line_segment(vec2 p, vec2 v, vec2 w) {
+    float l2 = pow(distance(v, w), 2.0);
+    if (l2 == 0.0) return distance(p, v);
+    float t = max(0.0, min(1.0, dot(p - v, w - v) / l2));
+    vec2 projection = v + t * (w - v);
+    return distance(p, projection);
+}
+
+float draw_wave(vec2 uv, vec2 audio_data, int samples) {
+    float line_intensity = 0.0;
+    float wave_scale = 0.25; // wave_scale equivalent
+
+    // These parameters are usually calculated in a ClipWaveformEdges function.
+    // We replicate the core logic for nWaveMode=6 here.
+    float angle = 1.57 + wave_mystery;
+    float c = cos(angle);
+    float s = sin(angle);
+
+    // Simplified line definition based on wave_x, wave_y and angle
+    vec2 start_point = vec2(wave_x - c*0.5, wave_y - s*0.5);
+    vec2 end_point = vec2(wave_x + c*0.5, wave_y + s*0.5);
+    vec2 direction = normalize(end_point - start_point);
+    vec2 perpendicular = vec2(-direction.y, direction.x);
+
+
+    for (int i = 0; i < samples - 1; i++) {
+        float p1_idx = float(i) / float(samples);
+        float p2_idx = float(i+1) / float(samples);
+
+        // Use audio data to displace points.
+        // We use two components of iAudioBands as a proxy for the stereo waveform.
+        float displacement1 = (i % 2 == 0) ? audio_data.x : audio_data.y;
+        float displacement2 = ((i+1) % 2 == 0) ? audio_data.x : audio_data.y;
+
+        vec2 p1 = start_point + direction * p1_idx + perpendicular * displacement1 * wave_scale;
+        vec2 p2 = start_point + direction * p2_idx + perpendicular * displacement2 * wave_scale;
+
+        float dist = distance_to_line_segment(uv, p1, p2);
+        line_intensity += (1.0 - smoothstep(0.0, 0.01, dist));
+    }
+
+    return line_intensity;
+}
+)___";
+}
+
 std::string translateToGLSL(const std::string& perFrame, const std::string& perPixel, const libprojectM::PresetFileParser::ValueMap& presetValues) {
     projectm_eval_context* context = projectm_eval_context_create(nullptr, nullptr);
     if (!context) {
@@ -352,9 +416,12 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
 
     projectm_eval_context_destroy(context);
 
+    std::string waveformGLSL = generateWaveformGLSL(presetValues);
+
     std::string glsl = "#version 330 core\n\nout vec4 FragColor;\nin vec2 uv;\n\n";
     glsl += "float float_from_bool(bool b) { return b ? 1.0 : 0.0; }\n\n";
-    glsl += "// Standard RaymarchVibe uniforms\n";
+    glsl += waveformGLSL;
+    glsl += "\n// Standard RaymarchVibe uniforms\n";
     glsl += "uniform float iTime;\nuniform vec2 iResolution;\nuniform float iFps;\nuniform float iFrame;\nuniform float iProgress;\nuniform vec4 iAudioBands;\nuniform vec4 iAudioBandsAtt;\n";
     glsl += "uniform sampler2D iChannel0; // Feedback buffer\n";
     glsl += "uniform sampler2D iChannel1;\n";
@@ -411,9 +478,12 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
     glsl += "\n    // Apply decay, which is essential for the classic MilkDrop fade effect.\n";
     glsl += "    feedback.rgb *= decay;\n";
     glsl += "\n    // The 'ob_' variables are for the outer border. We'll use them to tint the feedback color.\n";
-    glsl += "    // A full implementation would draw waves and borders, but this is a good approximation.\n";
     glsl += "    vec4 border_color = vec4(ob_r, ob_g, ob_b, ob_a);\n";
-    glsl += "    FragColor = mix(feedback, border_color, border_color.a);\n";
+    glsl += "    FragColor = mix(feedback, border_color, border_color.a);\n\n";
+    glsl += "    // Additive blending for waves and shapes\n";
+    glsl += "    vec4 wave_color = vec4(wave_r, wave_g, wave_b, wave_a);\n";
+    glsl += "    float wave_intensity = draw_wave(uv, iAudioBands.xy, 128) + draw_wave(uv, iAudioBands.zw, 128);\n";
+    glsl += "    FragColor = mix(FragColor, wave_color, wave_intensity * wave_a);\n";
     glsl += "}\n";
     return glsl;
 }
