@@ -19,6 +19,7 @@ unset(MILKDROP_BUILD_TESTING_SAVED)
 
 add_executable(MilkdropConverter
   MilkdropConverter.cpp
+  WaveModeRenderer.cpp
   # Manually add the preset parser files to the build
   vendor/projectm-master/src/libprojectM/PresetFileParser.cpp
 )
@@ -43,5 +44,13 @@ if(BUILD_TESTING)
       --converter $<TARGET_FILE:MilkdropConverter>
       --preset ${CMAKE_SOURCE_DIR}/baked.milk
       --golden ${CMAKE_SOURCE_DIR}/tests/golden/baked_per_pixel.glsl
+  )
+
+  add_test(
+    NAME wave_mode_regression
+    COMMAND Python3::Interpreter
+      ${CMAKE_SOURCE_DIR}/tests/regression_wave_modes.py
+      --converter $<TARGET_FILE:MilkdropConverter>
+      --fixtures ${CMAKE_SOURCE_DIR}/tests/presets
   )
 endif()
