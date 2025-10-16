@@ -1,0 +1,8 @@
+[preset00]
+per_frame_000=wave_a=1;
+nWaveMode=2
+wave_r=0.3
+wave_g=0.9
+wave_b=1.0
+wave_x=0.4
+wave_y=0.6

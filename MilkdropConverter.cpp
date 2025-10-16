@@ -32,6 +32,8 @@ extern "C" {
 // The public API uses an opaque pointer, so we must cast it to the internal type.
 #define internal_context(ctx) (reinterpret_cast<prjm_eval_compiler_context_t*>(ctx))
 
+#include "WaveModeRenderer.hpp"
+
 // A map of MilkDrop built-in variables to their GLSL equivalents.
 const std::unordered_map<std::string, std::string> milkToGLSLVars = {
     {"time", "iTime"},
@@ -467,67 +469,20 @@ std::set<std::string> findUserVars(prjm_eval_compiler_context_t* ctx) {
 }
 
 std::string generateWaveformGLSL(const libprojectM::PresetFileParser::ValueMap& presetValues) {
-    // For now, we only support nWaveMode=6, as found in 3dragonz.milk
+    // Extract nWaveMode from preset values, default to 6
+    // PresetFileParser lowercases all keys, so we need to look for "nwavemode"
     int nWaveMode = 6;
-    auto it = presetValues.find("nWaveMode");
+    auto it = presetValues.find("nwavemode");
     if (it != presetValues.end()) {
         try {
             nWaveMode = std::stoi(it->second);
         } catch (const std::logic_error& e) {
-            // ignore
+            // ignore and use default
         }
     }
 
-    if (nWaveMode != 6) {
-        return "float draw_wave(vec2 uv, vec2 audio_data, int samples) { return 0.0; }\n";
-    }
-
-    return R"___(
-// Helper function to calculate the shortest distance from a point to a line segment.
-float distance_to_line_segment(vec2 p, vec2 v, vec2 w) {
-    float l2 = pow(distance(v, w), 2.0);
-    if (l2 == 0.0) return distance(p, v);
-    float t = max(0.0, min(1.0, dot(p - v, w - v) / l2));
-    vec2 projection = v + t * (w - v);
-    return distance(p, projection);
-}
-
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery) {
-    float line_intensity = 0.0;
-    float wave_scale = 0.25; // wave_scale equivalent
-
-    // These parameters are usually calculated in a ClipWaveformEdges function.
-    // We replicate the core logic for nWaveMode=6 here.
-    float angle = 1.57 + wave_mystery;
-    float c = cos(angle);
-    float s = sin(angle);
-
-    // Simplified line definition based on wave_x, wave_y and angle
-    vec2 start_point = vec2(wave_x - c*0.5, wave_y - s*0.5);
-    vec2 end_point = vec2(wave_x + c*0.5, wave_y + s*0.5);
-    vec2 direction = normalize(end_point - start_point);
-    vec2 perpendicular = vec2(-direction.y, direction.x);
-
-
-    for (int i = 0; i < samples - 1; i++) {
-        float p1_idx = float(i) / float(samples);
-        float p2_idx = float(i+1) / float(samples);
-
-        // Use audio data to displace points.
-        // We use two components of iAudioBands as a proxy for the stereo waveform.
-        float displacement1 = (i % 2 == 0) ? audio_data.x : audio_data.y;
-        float displacement2 = ((i+1) % 2 == 0) ? audio_data.x : audio_data.y;
-
-        vec2 p1 = start_point + direction * p1_idx + perpendicular * displacement1 * wave_scale;
-        vec2 p2 = start_point + direction * p2_idx + perpendicular * displacement2 * wave_scale;
-
-        float dist = distance_to_line_segment(uv, p1, p2);
-        line_intensity += (1.0 - smoothstep(0.0, 0.01, dist));
-    }
-
-    return line_intensity;
-}
-)___";
+    // Use the WaveModeRenderer strategy to generate the appropriate GLSL
+    return WaveModeRenderer::generateWaveformGLSL(nWaveMode, presetValues);
 }
 
 std::string translateToGLSL(const std::string& perFrame, const std::string& perPixel, const libprojectM::PresetFileParser::ValueMap& presetValues) {
