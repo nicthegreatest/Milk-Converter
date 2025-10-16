@@ -131,5 +131,21 @@ Once built, you can run the converter from the project's root directory with the
 3. Implement custom shape rendering
 4. (Future Enhancement) Integrate HLSL shader translation for warp/comp shaders
 
+## 6. Regression Testing
+
+The build enables a CTest-driven regression suite to guard against translation regressions.
+
+### 6.1 baked.milk per-pixel regression
+
+After configuring and building the project, run the baked preset regression:
+
+```bash
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build -R baked_per_pixel_regression -V
+```
+
+The `tests/regression_baked.py` helper runs the converter against `baked.milk`, extracts the `// Per-pixel logic` block, and compares it to the golden expectation in `tests/golden/baked_per_pixel.glsl`. It also asserts the presence of preset-specific lines such as `warp = 1.42;`, `q3 = (iAudioBands.z * bom);`, and `q5 = (iAudioBands.y * rox);`. On failure the script prints the missing expressions or a unified diff to make diagnosing regressions straightforward.
+
 ## Shader Documentation for Future Coding Agents
 For detailed information on shader standards and diagnostics, please refer to the [SHADERS.md documentation](https://github.com/nicthegreatest/raymarchvibe/blob/main/documentation/SHADERS.md).
