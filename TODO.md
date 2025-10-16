@@ -28,12 +28,15 @@ The converter is now feature-complete for core MilkDrop preset translation:
 - ✅ **Regression Coverage:** Automated CTest suite validates translation correctness
 
 ## Remaining Tasks (v0.9.0+)
-- [ ] Add support for more built-in wave modes (0-5, 7+)
+- [x] **feat(waveform): add full spectrum MilkDrop wave mode rendering with strategy class** ✅ COMPLETED
+- [x] **fix(waveform): resolve uniform declaration ordering issues in all wave modes** ✅ COMPLETED
+- [x] **feat(architecture): implement mode-aware callPattern() for all wave renderers** ✅ COMPLETED
+- [x] **build(ci): achieve successful compilation and linking** ✅ COMPLETED
 - [ ] Add support for custom shapes
 - [ ] Expand regression test suite with additional preset fixtures
 - [ ] Investigate and address feedback buffer handling differences (if patterns emerge from user testing)
 - [ ] (Stretch Goal) Investigate and implement translation for `warp` and `comp` HLSL shaders
-- [ ] (Stretch Goal) Pass full audio waveform data to the shader via a texture for more accurate rendering
+- [ ] (Stretch Goal) Pass full audio waveform data via texture for enhanced rendering
 
 ## Regression Coverage
 - [x] baked.milk per-pixel translation is locked down via `ctest -R baked_per_pixel_regression`

@@ -622,8 +622,8 @@ float rand(vec2 co){
 
     // Overlay waveforms.
     vec4 wave_color = clamp(vec4(wave_r, wave_g, wave_b, wave_a), 0.0, 1.0);
-    float wave_intensity = clamp(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery) + draw_wave(pixelUV, iAudioBands.zw, 128, wave_x, wave_y, wave_mystery), 0.0, 1.0);
-    composedColor.rgb = mix(composedColor.rgb, wave_color.rgb, wave_intensity * wave_color.a);
+    float wave_intensity = draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery);
+    composedColor.rgb = mix(composedColor.rgb, wave_color.rgb, clamp(wave_intensity * wave_color.a, 0.0, 1.0));
 
     FragColor = vec4(clamp(composedColor.rgb, 0.0, 1.0), clamp(composedColor.a, 0.0, 1.0));
 }

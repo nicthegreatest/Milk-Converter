@@ -46,6 +46,12 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
 }
 )___";
     }
+
+    std::string callPattern() const override {
+        return R"___(
+draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery)
+)___";
+    }
 };
 
 class CenteredSpiroRenderer final : public WaveModeRenderer {
@@ -85,6 +91,10 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
 }
 )___";
     }
+
+    std::string callPattern() const override {
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+    }
 };
 
 class CenteredSpiroVolumeRenderer final : public WaveModeRenderer {
@@ -102,13 +112,13 @@ vec2 wave_mode3_vertex(float displacement_x, float displacement_y, vec2 center, 
     std::string drawFunction() const override {
         return R"___(
 // Mode 3: Volume-modulated centered dots
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float volume_level)
 {
     float intensity = 0.0;
     vec2 center = vec2(wave_x, wave_y);
     vec2 aspect = wave_aspect();
     float base_scale = 0.25;
-    float volume_factor = clamp(iAudioBands.z * iAudioBands.z * 1.3, 0.1, 2.5);
+    float volume_factor = clamp(volume_level * volume_level * 1.3, 0.1, 2.5);
     float wave_scale = base_scale * volume_factor;
     int num_samples = min(samples, 512);
 
@@ -124,6 +134,12 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
 
     return intensity;
 }
+)___";
+    }
+
+    std::string callPattern() const override {
+        return R"___(
+draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, iAudioBands.z)
 )___";
     }
 };
@@ -176,6 +192,10 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
 }
 )___";
     }
+
+    std::string callPattern() const override {
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+    }
 };
 
 class ExplosiveHashRenderer final : public WaveModeRenderer {
@@ -215,6 +235,10 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
     return intensity;
 }
 )___";
+    }
+
+    std::string callPattern() const override {
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
     }
 };
 
@@ -265,6 +289,10 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
     return intensity;
 }
 )___";
+    }
+
+    std::string callPattern() const override {
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
     }
 };
 
@@ -323,6 +351,10 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
 }
 )___";
     }
+
+    std::string callPattern() const override {
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+    }
 };
 
 class SpectrumLineRenderer final : public WaveModeRenderer {
@@ -371,6 +403,10 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
     return intensity;
 }
 )___";
+    }
+
+    std::string callPattern() const override {
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
     }
 };
 
@@ -427,17 +463,7 @@ std::string WaveModeRenderer::generateCommonHelpers()
     return R"___(
 vec2 wave_aspect()
 {
-    float aspect_x = 1.0;
-    float aspect_y = 1.0;
-    if (iResolution.x > iResolution.y)
-    {
-        aspect_y = iResolution.y / max(iResolution.x, 1.0);
-    }
-    else if (iResolution.y > 0.0)
-    {
-        aspect_x = iResolution.x / iResolution.y;
-    }
-    return vec2(aspect_x, aspect_y);
+    return vec2(1.0, 1.0);
 }
 
 float distance_to_line_segment(vec2 p, vec2 v, vec2 w)

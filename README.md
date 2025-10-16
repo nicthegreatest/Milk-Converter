@@ -191,8 +191,30 @@ The `tests/regression_baked.py` script:
 
 This regression test locks down the per-pixel translation behavior, ensuring that parser fixes or GLSLGenerator improvements don't accidentally break working preset conversions.
 
-## 7. For Contributors: Understanding the Codebase
+### 6.2 Multi-waveform mode regression testing
 
+With the addition of full waveform mode support, new regression tests validate all classic MilkDrop wave modes. Test fixtures for modes 0,2,3,4,5,6,7,8 ensure proper GLSL generation for each rendering style.
+
+**Wave Mode Test Coverage:**
+- **Mode 0**: CircularBarsRenderer (spectrum circle bars)
+- **Mode 2**: CenteredSpiroRenderer (centered dots)
+- **Mode 3**: CenteredSpiroVolumeRenderer (volume-modulated dots)
+- **Mode 4**: DerivativeLineRenderer (angled line displays)
+- **Mode 5**: ExplosiveHashRenderer (radial patterns)
+- **Mode 6**: LineWaveRenderer (angle-adjustable spectrum lines) ⭐
+- **Mode 7**: DoubleLineWaveRenderer (dual spectrum lines)
+- **Mode 8**: SpectrumLineRenderer (spectrum analyzer lines)
+
+Run the waveform regression tests:
+
+```bash
+python3 tests/regression_wave_modes.py --converter build/MilkdropConverter --fixtures tests/presets/
+```
+
+**Test Details:**
+- Each wave mode preset sets a specific `nWaveMode` value and minimal parameters
+- The test script verifies that the appropriate mode-specific GLSL functions are generated
+- Ensures proper uniform parameterization (no direct uniform access in helper functions)
 ### 7.1. Project Structure
 
 ```
