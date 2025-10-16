@@ -481,7 +481,8 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
 
     std::string waveformGLSL = generateWaveformGLSL(presetValues);
 
-    std::string glsl = "#version 330 core\n\nout vec4 FragColor;\nin vec2 uv;\n\n";
+    std::string glsl = "#version 330 core\n\n";
+    glsl += "out vec4 FragColor;\n\n";
     glsl += "float float_from_bool(bool b) { return b ? 1.0 : 0.0; }\n\n";
     glsl += R"___(
 float rand(vec2 co){
@@ -490,7 +491,13 @@ float rand(vec2 co){
 )___";
     glsl += waveformGLSL;
     glsl += "\n// Standard RaymarchVibe uniforms\n";
-    glsl += "uniform float iTime;\nuniform vec2 iResolution;\nuniform float iFps;\nuniform float iFrame;\nuniform float iProgress;\nuniform vec4 iAudioBands;\nuniform vec4 iAudioBandsAtt;\n";
+    glsl += "uniform float iTime;\n";
+    glsl += "uniform vec2 iResolution;\n";
+    glsl += "uniform float iFps;\n";
+    glsl += "uniform float iFrame;\n";
+    glsl += "uniform float iProgress;\n";
+    glsl += "uniform vec4 iAudioBands;\n";
+    glsl += "uniform vec4 iAudioBandsAtt;\n";
     glsl += "uniform sampler2D iChannel0; // Feedback buffer\n";
     glsl += "uniform sampler2D iChannel1;\n";
     glsl += "uniform sampler2D iChannel2;\n";
@@ -501,16 +508,17 @@ float rand(vec2 co){
         auto it = presetValues.find(pair.first);
         if (it != presetValues.end()) {
             try {
-                // Ensure the value is a valid float before using it.
-                std::stof(it->second);
+                std::stof(it->second);  // Test if it's a valid float
                 defaultValue = it->second;
             } catch (const std::logic_error& e) {
-                // Value from .milk file is not a float, use hardcoded default.
+                // Keep default value if .milk file value is not a float
             }
         }
         glsl += "uniform float u_" + pair.first + " = " + defaultValue + "; // {\"widget\":\"" + pair.second.widget + "\",\"default\":" + defaultValue + ",\"min\":" + pair.second.min + ",\"max\":" + pair.second.max + ",\"step\":" + pair.second.step + "}\n";
     }
     glsl += "\nvoid main() {\n";
+    glsl += "    // Calculate UV coordinates from screen position\n";
+    glsl += "    vec2 uv = gl_FragCoord.xy / iResolution.xy;\n\n";
     glsl += "    // Initialize local variables from uniforms\n";
     for(const auto& pair : uniformControls) {
         glsl += "    float " + pair.first + " = u_" + pair.first + ";\n";

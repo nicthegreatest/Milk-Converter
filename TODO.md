@@ -18,15 +18,12 @@
 - [x] **RaymarchVibe Integration:** UI controls parse correctly; shaders compile without errors
 
 ## Remaining Tasks (v0.9.0+)
-- [ ] Debug RaymarchVibe rendering issues (white screen, feedback buffer initialization)
-- [ ] Implement UV coordinate clamping/wrapping for robust texture sampling
-- [ ] Optimize feedback loop handling for consistent visual output
+- [ ] Complete final verification of converted shader loading in RaymarchVibe
 - [ ] Add support for more built-in wave modes (0-5, 7+)
 - [ ] Add support for custom shapes
 - [ ] (Stretch Goal) Investigate and implement translation for `warp` and `comp` HLSL shaders
 - [ ] (Stretch Goal) Pass full audio waveform data to the shader via a texture for more accurate rendering
 
 ## Known Issues
-- Converted shaders display white screen in RaymarchVibe despite correct per_frame logic
-- Likely related to feedback buffer initialization or out-of-bounds UV sampling
-- Audio reactivity calculations are present but may not be visible due to rendering issue
+- Feedback buffer handling patterns may differ between manually written shaders and converted output
+- Use SHADERS.md specification to diagnose and correct conversion inconsistencies
