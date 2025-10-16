@@ -1,0 +1,39 @@
+#pragma once
+
+#include <map>
+#include <memory>
+#include <string>
+
+/**
+ * @brief Abstract strategy for generating GLSL waveform rendering code.
+ *
+ * Concrete subclasses implement vertex-generation helpers and draw functions
+ * for specific MilkDrop wave modes. The factory method selects the correct
+ * strategy based on the preset's nWaveMode value.
+ */
+class WaveModeRenderer {
+public:
+    virtual ~WaveModeRenderer() = default;
+
+    /// Optional helpers shared across modes (defaults to the common helpers).
+    virtual std::string helperFunctions() const;
+
+    /// Mode-specific vertex generation helpers (may be empty).
+    virtual std::string vertexFunction() const = 0;
+
+    /// Mode-specific draw function implementation. Must declare draw_wave().
+    virtual std::string drawFunction() const = 0;
+
+    /// Generate the GLSL snippet for the requested wave mode.
+    static std::string generateWaveformGLSL(int nWaveMode, const std::map<std::string, std::string>& presetValues);
+
+protected:
+    /// Factory method returning the appropriate renderer implementation.
+    static std::unique_ptr<WaveModeRenderer> create(int nWaveMode, const std::map<std::string, std::string>& presetValues);
+
+    /// Shared helper functions available to all strategies.
+    static std::string generateCommonHelpers();
+
+    /// Fallback GLSL when a mode is unsupported.
+    static std::string generateFallback();
+};
