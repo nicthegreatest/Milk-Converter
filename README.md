@@ -28,20 +28,32 @@ The converter is a **completely separate, self-contained application**. This avo
 
 ## 2. Technical Conversion Plan
 
-This tool will function as a translator, converting the logic from a `.milk` preset into a single, functional GLSL fragment shader.
+This tool functions as a translator, converting the logic from a `.milk` preset into a single, functional GLSL fragment shader through a multi-stage pipeline.
 
-### 2.1. How It Will Work
+### 2.1. How It Works
 
-1.  **Parsing:** The converter uses the `PresetFileParser` class from the included `libprojectM` source to read and parse the input `.milk` file.
+1.  **Parsing:** The converter uses the `PresetFileParser` class from the included `libprojectM` source to read and parse the input `.milk` file into key-value pairs and code blocks.
 
-2.  **Expression Translation:** The core of the converter is a translation unit that programmatically converts the MilkDrop expression language into valid GLSL syntax.
-    *   **Variable Mapping:** Built-in Milkdrop variables are mapped to RaymarchVibe's standard uniforms (e.g., `time` -> `iTime`, `bass` -> `iAudioBands.x`).
-    *   **Function Mapping:** Milkdrop functions (`sin`, `sqr`, etc.) are mapped to their direct GLSL equivalents.
-    *   **Q & T Variables:** The special `q1-q32` and `t1-t8` variables are declared as local variables in the GLSL `main()` function. The `per_frame` logic is translated first to calculate their values, which are then available for the `per_pixel` logic.
+2.  **Expression Compilation:** Per-frame and per-pixel code blocks are compiled using the `projectm-eval` library, which parses MilkDrop expressions and generates Abstract Syntax Trees (ASTs) representing the expression logic.
 
-3.  **Shader Generation:** The tool generates a complete `.frag` file containing a `#version 330 core` directive, all necessary `uniform` and `in/out` declarations, and a `main()` function with the translated code.
+3.  **GLSL Translation:** The custom `GLSLGenerator` class traverses the AST nodes and generates GLSL code:
+    *   **Variable Mapping:** Built-in MilkDrop variables are mapped to RaymarchVibe's standard uniforms (e.g., `time` → `iTime`, `bass` → `iAudioBands.x`, `x` → `uv.x`, `y` → `uv.y`).
+    *   **Function Mapping:** MilkDrop functions (`sin`, `sqr`, `if`, etc.) are mapped to their GLSL equivalents or helper functions.
+    *   **Operator Translation:** Expression operators (`+`, `-`, `*`, `/`, `==`, `>`, etc.) are translated to corresponding GLSL operators.
+    *   **Per-Pixel Variable Rewrites:** Per-pixel color outputs (`red`, `green`, `blue`, `alpha`) are automatically rewritten to GLSL vec4 component access (`pixelColor.r`, `pixelColor.g`, etc.).
+    *   **Q & T State Variables:** The special `q1-q32` and `t1-t8` variables are declared as local variables in the GLSL `main()` function. The `per_frame` logic is translated first to calculate their values, which are then available for the `per_pixel` logic, enabling complex inter-frame state management.
 
-4.  **UI Controls:** To make the converted shaders interactive, the converter adds JSON-formatted comments to the generated `uniform` declarations. RaymarchVibe's UI can parse these annotations to create real-time control widgets for the preset's parameters.
+4.  **Shader Generation:** The tool generates a complete `.frag` file containing:
+    *   `#version 330 core` directive
+    *   Helper functions for MilkDrop-specific operations (rand, sigmoid, boolean operators)
+    *   Standard RaymarchVibe uniforms (iTime, iResolution, iAudioBands, iChannel0-3)
+    *   Preset-specific uniforms with JSON-annotated UI controls
+    *   A `main()` function with translated per-frame and per-pixel logic
+    *   Coordinate transformation and feedback buffer composition logic
+
+5.  **UI Controls:** To make the converted shaders interactive, the converter adds JSON-formatted comments to the generated `uniform` declarations. RaymarchVibe's UI can parse these annotations to create real-time control widgets for the preset's parameters (zoom, rot, decay, colors, etc.).
+
+6.  **Waveform Integration:** For presets with waveforms enabled, the converter generates a `draw_wave()` function that replicates the waveform rendering logic, currently supporting `nWaveMode=6` (Line Wave).
 
 ## 3. Build Instructions
 
@@ -50,12 +62,12 @@ This project is self-contained. The `projectM` dependency must be cloned into th
 ### 3.1. Prerequisites
 
 Ensure you have the following tools installed on your system:
-*   CMake (3.20 or higher)
+*   CMake (3.15 or higher)
 *   A C++17 compliant compiler (e.g., GCC, Clang)
 *   Git
 *   Bison
 *   Flex
-*   OpenGL Development Libraries
+*   OpenGL Development Libraries (required by projectM dependency)
 
 **On a Debian/Ubuntu-based system, you can install these with:**
 ```bash
@@ -105,37 +117,54 @@ Once built, you can run the converter from the project's root directory with the
 
 ## 5. Project Status
 
-### Completed Features (v0.8.1)
+### Completed Features (v0.8.2)
 - ✅ **Complete per_frame Logic Conversion:** Converts complex MilkDrop expressions including beat detection, color modulation, and audio-reactive calculations
+- ✅ **Complete per_pixel Logic Conversion:** Full implementation of per-pixel expression translation with proper variable mapping (red/green/blue/alpha → pixelColor components)
 - ✅ **Multi-line Expression Support:** Handles nested conditionals like `pulsefreq=if(equal(pulsefreq,0),2,if(pulse,...))`
 - ✅ **Full Variable Mapping:** Supports q1-q32, t1-t8, audio bands, and all built-in functions
 - ✅ **UI Controls Generation:** Produces JSON-annotated uniforms for real-time parameter adjustment
 - ✅ **Waveform Rendering:** Supports Line Wave mode (nWaveMode=6)
 - ✅ **Build System:** Standalone CMake-based build with vendored dependencies
-- ✅ **Shader Standards Documentation:** Created unified specification in `../../../documentation/SHADERS.md`
+- ✅ **Regression Testing:** Automated CTest suite validates per-pixel translation correctness
+- ✅ **RaymarchVibe GLSL Compliance:** Generated shaders conform to [RaymarchVibe GLSL specifications](https://github.com/nicthegreatest/raymarchvibe/blob/main/documentation/SHADERS.md)
 
 ### Current Status
-- [x] **Per-frame Logic:** Successfully converts complete MilkDrop beat detection, color modulation, and audio-reactive calculations
-- [x] **Shader Generation:** Produces grammatically correct GLSL with full semantic accuracy
-- [x] **RaymarchVibe Integration:** UI controls parse correctly; shaders compile without errors
-- [x] **Technical Documentation:** SHADERS.md provides single source of truth for all conversion standards and diagnostics
+The converter successfully translates both per-frame and per-pixel logic from MilkDrop presets into RaymarchVibe-compatible GLSL fragment shaders:
+
+- ✅ **Per-frame Logic:** Complete translation of beat detection, color modulation, and audio-reactive calculations
+- ✅ **Per-pixel Logic:** Full implementation including coordinate-dependent calculations, color manipulation, and state variable access
+- ✅ **Shader Generation:** Produces grammatically correct GLSL with full semantic accuracy
+- ✅ **RaymarchVibe Integration:** UI controls parse correctly; shaders compile without errors
+- ✅ **Technical Documentation:** External [SHADERS.md](https://github.com/nicthegreatest/raymarchvibe/blob/main/documentation/SHADERS.md) provides single source of truth for conversion standards and diagnostics
+
+### Architecture Highlights
+- **GLSLGenerator Class:** Custom AST walker translates projectm-eval expression trees into GLSL, mapping MilkDrop variables/functions to RaymarchVibe equivalents
+- **Per-Pixel Variable Rewrites:** Automatic translation of per-pixel color outputs (red/green/blue/alpha) to proper GLSL vec4 component access
+- **State Flow:** Q1-Q32 and T1-T8 variables correctly flow from per-frame to per-pixel logic, enabling complex inter-frame state management
+- **Audio Integration:** Full mapping of MilkDrop audio bands (bass/mid/treb) to iAudioBands uniform components
 
 ### Known Issues & Next Steps
-- [x] **Shader Standards Documentation:** Resolved by creating unified SHADERS.md specification that consolidates all technical requirements
-- **White Screen in RaymarchVibe:** Now properly diagnosed - feedback buffer handling patterns differ from manually written shaders
-- **Converter Validation:** SHADERS.md provides clear diagnostic framework for identifying conversion issues
+- **Feedback Buffer Handling:** Converted shaders may exhibit rendering differences compared to manually-written shaders due to feedback loop initialization patterns (see SHADERS.md diagnostics)
+- **Additional Wave Modes:** Currently supports nWaveMode=6; modes 0-5 and 7+ pending implementation
+- **Custom Shapes:** Shape rendering not yet implemented
 
 ### Development Priorities
-1. Complete shader loading verification in RaymarchVibe and prepare for repository push
-2. Add support for additional wave modes (0-5, 7+)
-3. Implement custom shape rendering
+1. Add support for additional wave modes (0-5, 7+)
+2. Implement custom shape rendering
+3. Expand regression test coverage with additional preset fixtures
 4. (Future Enhancement) Integrate HLSL shader translation for warp/comp shaders
 
 ## 6. Regression Testing
 
-The build enables a CTest-driven regression suite to guard against translation regressions.
+The build enables a CTest-driven regression suite to guard against translation regressions and ensure consistent output across changes to the GLSLGenerator and parser logic.
 
 ### 6.1 baked.milk per-pixel regression
+
+The `baked.milk` preset serves as our primary test fixture for validating per-pixel logic translation. This preset was chosen because it exercises:
+- Multiple audio-reactive variables (bass, mid, treb)
+- Complex mathematical expressions with trigonometric functions
+- User-defined variables that interact with q/t state
+- Per-pixel warp calculations and color manipulation
 
 After configuring and building the project, run the baked preset regression:
 
@@ -145,7 +174,91 @@ cmake --build build
 ctest --test-dir build -R baked_per_pixel_regression -V
 ```
 
-The `tests/regression_baked.py` helper runs the converter against `baked.milk`, extracts the `// Per-pixel logic` block, and compares it to the golden expectation in `tests/golden/baked_per_pixel.glsl`. It also asserts the presence of preset-specific lines such as `warp = 1.42;`, `q3 = (iAudioBands.z * bom);`, and `q5 = (iAudioBands.y * rox);`. On failure the script prints the missing expressions or a unified diff to make diagnosing regressions straightforward.
+**What the test validates:**
+1. The converter successfully processes `baked.milk` without errors
+2. The generated per-pixel GLSL block exactly matches the golden reference in `tests/golden/baked_per_pixel.glsl`
+3. Critical preset-specific expressions are present:
+   - `warp = 1.42;` - Per-pixel warp override
+   - `q3 = (iAudioBands.z * bom);` - Treble-reactive state variable
+   - `q8 = (iAudioBands.x * boom);` - Bass-reactive state variable
+   - `q5 = (iAudioBands.y * rox);` - Mid-reactive state variable
 
-## Shader Documentation for Future Coding Agents
+The `tests/regression_baked.py` script:
+- Runs the converter against `baked.milk`
+- Extracts lines between `// Per-pixel logic` and `// Apply coordinate transformations` markers
+- Compares generated output to the golden reference
+- On failure, prints missing essential expressions or a unified diff for easy diagnosis
+
+This regression test locks down the per-pixel translation behavior, ensuring that parser fixes or GLSLGenerator improvements don't accidentally break working preset conversions.
+
+## 7. For Contributors: Understanding the Codebase
+
+### 7.1. Project Structure
+
+```
+MilkdropConverter/
+├── MilkdropConverter.cpp          # Main converter implementation
+├── CMakeLists.txt                 # Build configuration
+├── baked.milk                     # Test preset fixture
+├── tests/
+│   ├── regression_baked.py        # Automated regression test script
+│   └── golden/
+│       └── baked_per_pixel.glsl   # Golden reference for per-pixel translation
+├── vendor/
+│   └── projectm-master/           # Vendored projectM dependency
+│       ├── vendor/projectm-eval/  # Expression parser and AST generator
+│       └── src/libprojectM/       # PresetFileParser
+└── documentation/
+    ├── README.md                  # This file
+    ├── TODO.md                    # Task tracking
+    ├── CHANGELOG.md               # Version history
+    ├── raymarch_instructions.md   # Conversion rules reference
+    └── milk-authoring-guide.md    # MilkDrop language reference
+```
+
+### 7.2. Key Components
+
+**GLSLGenerator Class** (`MilkdropConverter.cpp`)
+- Traverses projectm-eval AST nodes recursively
+- Maps MilkDrop operators/functions to GLSL equivalents
+- Handles variable rewrites for per-pixel context (red/green/blue → pixelColor.r/g/b)
+- Generates GLSL expressions with proper type conversions and parenthesization
+
+**Variable Mapping Tables** (`milkToGLSLVars`, `uniformControls`)
+- `milkToGLSLVars`: Maps MilkDrop built-in variables to RaymarchVibe uniforms
+- `uniformControls`: Defines UI widget metadata for interactive parameters
+- `perPixelVariableRewrites()`: Handles context-specific variable translations
+
+**Expression Compilation Pipeline**
+1. `PresetFileParser` extracts per_frame/per_pixel code blocks from .milk files
+2. `projectm_eval_context_create()` initializes the expression compiler
+3. `projectm_eval_code_compile()` parses code and builds AST
+4. `GLSLGenerator::generate()` walks AST and emits GLSL code
+
+**Testing Infrastructure**
+- CTest integration for automated regression testing
+- `regression_baked.py` validates per-pixel translation against golden references
+- Checks for critical preset-specific expressions to catch regressions
+
+### 7.3. Adding Support for New Features
+
+**Adding a new wave mode:**
+1. Study the corresponding C++ implementation in `projectM/src/libprojectM/MilkdropPreset/Waveforms/`
+2. Translate the vertex generation logic into a GLSL function
+3. Update `generateWaveformGLSL()` to handle the new mode
+4. Add test coverage with a preset using that wave mode
+
+**Adding a new MilkDrop function:**
+1. Add the function pointer mapping in `GLSLGenerator` constructor
+2. Implement GLSL equivalent in shader preamble if needed (e.g., `sigmoid_eel`)
+3. Update `getFunctionName()` to handle the new function
+4. Test with a preset that uses the function
+
+**Extending variable mappings:**
+1. Update `milkToGLSLVars` for read-only built-in variables
+2. Update `uniformControls` for writable parameters that need UI widgets
+3. Update `perPixelVariableRewrites()` for context-specific translations
+4. Document in `raymarch_instructions.md`
+
+## 8. Shader Documentation for Future Coding Agents
 For detailed information on shader standards and diagnostics, please refer to the [SHADERS.md documentation](https://github.com/nicthegreatest/raymarchvibe/blob/main/documentation/SHADERS.md).
