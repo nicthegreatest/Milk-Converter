@@ -547,18 +547,49 @@ float rand(vec2 co){
     glsl += "uniform sampler2D iChannel2;\n";
     glsl += "uniform sampler2D iChannel3;\n\n";
     glsl += "// Preset-specific uniforms with UI annotations\n";
-    for(const auto& pair : uniformControls) {
+    for (const auto& pair : uniformControls) {
         std::string defaultValue = pair.second.defaultValue;
-        auto it = presetValues.find(pair.first);
-        if (it != presetValues.end()) {
+        std::string sliderMin = pair.second.min;
+        std::string sliderMax = pair.second.max;
+
+        float numericDefault = 0.0f;
+        bool hasNumericDefault = false;
+
+        if (auto it = presetValues.find(pair.first); it != presetValues.end()) {
             try {
-                std::stof(it->second);  // Test if it's a valid float
+                numericDefault = std::stof(it->second);
                 defaultValue = it->second;
-            } catch (const std::logic_error& e) {
-                // Keep default value if .milk file value is not a float
+                hasNumericDefault = true;
+            } catch (const std::logic_error&) {
+                // Keep fallback default if preset value is not numeric
             }
         }
-        glsl += "uniform float u_" + pair.first + " = " + defaultValue + "; // {\"widget\":\"" + pair.second.widget + "\",\"default\":" + defaultValue + ",\"min\":" + pair.second.min + ",\"max\":" + pair.second.max + ",\"step\":" + pair.second.step + "}\n";
+
+        if (!hasNumericDefault) {
+            try {
+                numericDefault = std::stof(defaultValue);
+                hasNumericDefault = true;
+            } catch (const std::logic_error&) {
+                // Leave numericDefault unused if parsing fails
+            }
+        }
+
+        if (hasNumericDefault) {
+            try {
+                float sliderMinNumeric = std::stof(pair.second.min);
+                float sliderMaxNumeric = std::stof(pair.second.max);
+                if (numericDefault < sliderMinNumeric) {
+                    sliderMin = defaultValue;
+                }
+                if (numericDefault > sliderMaxNumeric) {
+                    sliderMax = defaultValue;
+                }
+            } catch (const std::logic_error&) {
+                // Preserve original slider bounds if parsing fails
+            }
+        }
+
+        glsl += "uniform float u_" + pair.first + " = " + defaultValue + "; // {\"widget\":\"" + pair.second.widget + "\",\"default\":" + defaultValue + ",\"min\":" + sliderMin + ",\"max\":" + sliderMax + ",\"step\":" + pair.second.step + "}\n";
     }
     glsl += "\nvoid main() {\n";
     glsl += "    // Calculate UV coordinates from screen position\n";
