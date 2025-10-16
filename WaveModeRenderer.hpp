@@ -24,6 +24,9 @@ public:
     /// Mode-specific draw function implementation. Must declare draw_wave().
     virtual std::string drawFunction() const = 0;
 
+    /// Generate the calling code pattern for this mode's draw_wave function.
+    virtual std::string callPattern() const = 0;
+
     /// Generate the GLSL snippet for the requested wave mode.
     static std::string generateWaveformGLSL(int nWaveMode, const std::map<std::string, std::string>& presetValues);
 
