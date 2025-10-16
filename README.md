@@ -130,3 +130,6 @@ Once built, you can run the converter from the project's root directory with the
 2. Add support for additional wave modes (0-5, 7+)
 3. Implement custom shape rendering
 4. (Future Enhancement) Integrate HLSL shader translation for warp/comp shaders
+
+## Shader Documentation for Future Coding Agents
+For detailed information on shader standards and diagnostics, please refer to the [SHADERS.md documentation](https://github.com/nicthegreatest/raymarchvibe/blob/main/documentation/SHADERS.md).
