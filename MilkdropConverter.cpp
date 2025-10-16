@@ -531,37 +531,69 @@ float rand(vec2 co){
     }
     glsl += "\n    // Per-frame logic\n";
     glsl += perFrameGLSL;
+    glsl += "\n    // Initialize per-pixel state from per-frame results\n";
+    glsl += "    vec2 pixelUV = uv;\n";
+    glsl += "    vec4 pixelColor = vec4(r, g, b, a);\n";
+    glsl += "    float pixelZoom = zoom;\n";
+    glsl += "    float pixelZoomExp = zoomexp;\n";
+    glsl += "    float pixelWarp = warp;\n";
+    glsl += "    float pixelRotate = rot;\n";
+    glsl += "    vec2 pixelCenter = vec2(cx, cy);\n";
+    glsl += "    vec2 pixelTranslate = vec2(dx, dy);\n";
+    glsl += "    vec2 pixelScale = vec2(sx, sy);\n";
+    glsl += "    float pixelDecay = decay;\n";
     glsl += "\n    // Per-pixel logic\n";
     glsl += perPixelGLSL;
+    glsl += "    // Capture per-pixel outputs for final composition\n";
+    glsl += "    pixelUV = uv;\n";
+    glsl += "    pixelColor = vec4(r, g, b, a);\n";
+    glsl += "    pixelZoom = zoom;\n";
+    glsl += "    pixelZoomExp = zoomexp;\n";
+    glsl += "    pixelWarp = warp;\n";
+    glsl += "    pixelRotate = rot;\n";
+    glsl += "    pixelCenter = vec2(cx, cy);\n";
+    glsl += "    pixelTranslate = vec2(dx, dy);\n";
+    glsl += "    pixelScale = vec2(sx, sy);\n";
+    glsl += "    pixelDecay = decay;\n";
     glsl += R"___(
-    // Apply coordinate transformations calculated in per-pixel logic.
-    // This emulates the 'warp' part of a MilkDrop shader.
-    vec2 transformed_uv = uv - vec2(cx, cy); // Center on cx, cy
+    // Apply coordinate transformations using per-pixel state.
+    vec2 centeredUV = pixelUV - pixelCenter;
+    mat2 rotationMatrix = mat2(cos(pixelRotate), -sin(pixelRotate), sin(pixelRotate), cos(pixelRotate));
+    centeredUV = rotationMatrix * centeredUV;
 
-    mat2 rotation_matrix = mat2(cos(rot), -sin(rot), sin(rot), cos(rot));
-    transformed_uv = rotation_matrix * transformed_uv;
+    float zoomDenominator = max(0.0001, pow(max(0.0001, pixelZoom), pixelZoomExp));
+    vec2 scaleMagnitude = max(abs(pixelScale), vec2(0.0001));
+    vec2 scaleSign = vec2(pixelScale.x >= 0.0 ? 1.0 : -1.0, pixelScale.y >= 0.0 ? 1.0 : -1.0);
+    vec2 safeScale = scaleSign * scaleMagnitude;
+    vec2 scaledUV = centeredUV / safeScale;
+    scaledUV /= zoomDenominator;
+    scaledUV *= pixelWarp;
 
-    transformed_uv *= warp;
-    transformed_uv /= zoom;
-    transformed_uv /= vec2(sx, sy);
+    vec2 sampleUV = pixelCenter + scaledUV + pixelTranslate;
+    sampleUV = clamp(sampleUV, vec2(0.001), vec2(0.999));
 
-    transformed_uv += vec2(dx, dy); // Pan
-    transformed_uv += vec2(cx, cy); // Un-center
+    // Fetch feedback using the transformed UV and apply decay.
+    vec4 feedback = texture(iChannel0, sampleUV);
+    float decayFactor = clamp(pixelDecay, 0.0, 1.0);
+    feedback.rgb *= decayFactor;
 
+    // Blend feedback with per-pixel color output.
+    vec4 perPixelColor = clamp(pixelColor, 0.0, 1.0);
+    float perPixelAlpha = clamp(perPixelColor.a, 0.0, 1.0);
+    vec4 composedColor = mix(feedback, perPixelColor, perPixelAlpha);
+
+    // Preserve existing border tint.
+    vec4 border_color = clamp(vec4(ob_r, ob_g, ob_b, ob_a), 0.0, 1.0);
+    composedColor = mix(composedColor, border_color, border_color.a);
+
+    // Overlay waveforms.
+    vec4 wave_color = clamp(vec4(wave_r, wave_g, wave_b, wave_a), 0.0, 1.0);
+    float wave_intensity = clamp(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery) + draw_wave(pixelUV, iAudioBands.zw, 128, wave_x, wave_y, wave_mystery), 0.0, 1.0);
+    composedColor.rgb = mix(composedColor.rgb, wave_color.rgb, wave_intensity * wave_color.a);
+
+    FragColor = vec4(clamp(composedColor.rgb, 0.0, 1.0), clamp(composedColor.a, 0.0, 1.0));
+}
 )___";
-    glsl += "\n    // Final color composition\n";
-    glsl += "    // Sample the previous frame's output (feedback buffer) with warped UVs.\n";
-    glsl += "    vec4 feedback = texture(iChannel0, transformed_uv);\n";
-    glsl += "\n    // Apply decay, which is essential for the classic MilkDrop fade effect.\n";
-    glsl += "    feedback.rgb *= decay;\n";
-    glsl += "\n    // The 'ob_' variables are for the outer border. We'll use them to tint the feedback color.\n";
-    glsl += "    vec4 border_color = vec4(ob_r, ob_g, ob_b, ob_a);\n";
-    glsl += "    FragColor = mix(feedback, border_color, border_color.a);\n\n";
-    glsl += "    // Additive blending for waves and shapes\n";
-    glsl += "    vec4 wave_color = vec4(wave_r, wave_g, wave_b, wave_a);\n";
-    glsl += "    float wave_intensity = draw_wave(uv, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery) + draw_wave(uv, iAudioBands.zw, 128, wave_x, wave_y, wave_mystery);\n";
-    glsl += "    FragColor = mix(FragColor, wave_color, wave_intensity * wave_a);\n";
-    glsl += "}\n";
     return glsl;
 }
 
