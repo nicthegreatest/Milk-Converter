@@ -24,6 +24,10 @@
 - [ ] (Stretch Goal) Investigate and implement translation for `warp` and `comp` HLSL shaders
 - [ ] (Stretch Goal) Pass full audio waveform data to the shader via a texture for more accurate rendering
 
+## Regression Coverage
+- [x] baked.milk per-pixel translation is locked down via `ctest -R baked_per_pixel_regression`
+- [ ] Expand the regression suite with additional preset fixtures leveraging `tests/regression_baked.py`
+
 ## Known Issues
 - Feedback buffer handling patterns may differ between manually written shaders and converted output
 - Use SHADERS.md specification to diagnose and correct conversion inconsistencies
