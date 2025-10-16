@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.3] - 2025-10-16
+
+### Fixed
+- **Uniform Slider Range Validation:** Fixed issue where preset default values could exceed their UI slider ranges. Converter now dynamically expands slider min/max bounds when defaults fall outside the predefined ranges (e.g., eos.milk zoom=13.29 now gets slider range 0.5-13.29 instead of 0.5-1.5)
+
 ## [0.8.2] - 2025-10-16
 
 ### Added
