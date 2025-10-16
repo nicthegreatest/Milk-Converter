@@ -5,12 +5,23 @@ All notable changes to this project will be documented in this file.
 ## [0.8.2] - 2025-10-16
 
 ### Added
+- **Complete Per-Pixel Translation:** Implemented full per-pixel expression translation with proper variable rewrites (red/green/blue/alpha → pixelColor components) and coordinate-dependent calculations
+- **GLSLGenerator Architecture:** Custom AST walker translates projectm-eval expression trees into GLSL, mapping MilkDrop variables/functions to RaymarchVibe equivalents
+- **Per-Pixel State Management:** Q1-Q32 and T1-T8 variables correctly accessible in per-pixel logic, enabling complex inter-frame state management
+- **Automated Regression Testing:** Added CTest-driven regression suite with baked.milk test fixture to validate per-pixel translation correctness
 - **Shader Standards Documentation:** Created comprehensive single-source-of-truth specification document at `../../../documentation/SHADERS.md` consolidating all shader standards, uniform mappings, and conversion requirements
 - **Documentation Consolidation:** Resolved conflicting documentation by establishing clear separation of concerns - SHADERS.md for technical specs, guide files for usage instructions
+- **Per-Pixel Test Coverage:** `tests/regression_baked.py` validates generated per-pixel GLSL blocks against golden references, ensuring translation consistency
 
 ### Fixed
+- **Per-Pixel Expression Translation:** Fixed the root cause of identical shader output across presets by implementing complete per-pixel logic translation (previously was using placeholder code)
+- **Variable Scope Handling:** Properly scope per-pixel variables to enable coordinate-dependent transformations and color manipulation
 - **RaymarchVibe Rendering:** Feedback buffer handling patterns identified as root cause of white screen issues
 - **Converter Standards:** Unified shader generation patterns to match SHADERS.md specification exactly
+
+### Changed
+- **Documentation Updates:** README, TODO, and CHANGELOG now accurately reflect completed per-pixel translation implementation
+- **Project Status:** Converter is now feature-complete for core MilkDrop preset translation (per-frame + per-pixel logic)
 
 ## [0.8.1] - 2025-10-16
 
