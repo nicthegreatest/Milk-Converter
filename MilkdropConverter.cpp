@@ -16,6 +16,7 @@ void projectm_eval_memory_host_unlock_mutex() {}
 #include <algorithm>
 #include <cctype>
 #include <clocale>
+#include <cmath>
 
 #include "PresetFileParser.hpp"
 
@@ -79,6 +80,13 @@ const std::unordered_map<std::string, UniformControl> uniformControls = {
     {"wave_y", {"0.5", "slider", "0.0", "1.0", "0.01"}},
     {"wave_mystery", {"0.0", "slider", "-1.0", "1.0", "0.01"}},
     {"decay", {"0.98", "slider", "0.9", "1.0", "0.001"}},
+    {"gamma", {"1.0", "slider", "0.1", "5.0", "0.01"}},
+    {"brighten", {"0.0", "slider", "0.0", "1.0", "1.0"}},
+    {"darken", {"0.0", "slider", "0.0", "1.0", "1.0"}},
+    {"solarize", {"0.0", "slider", "0.0", "1.0", "1.0"}},
+    {"wrap", {"1.0", "slider", "0.0", "1.0", "1.0"}},
+    {"invert", {"0.0", "slider", "0.0", "1.0", "1.0"}},
+    {"darken_center", {"0.0", "slider", "0.0", "1.0", "1.0"}},
     {"r", {"0.0", "slider", "0.0", "1.0", "0.01"}},
     {"g", {"0.0", "slider", "0.0", "1.0", "0.01"}},
     {"b", {"0.0", "slider", "0.0", "1.0", "0.01"}},
@@ -107,12 +115,24 @@ const std::unordered_map<std::string, UniformControl> uniformControls = {
     {"echo_orient", {"0.0", "slider", "0.0", "3.0", "1.0"}},
 };
 
+const std::unordered_map<std::string, std::string>& perPixelVariableRewrites() {
+    static const std::unordered_map<std::string, std::string> rewrites = {
+        {"red", "pixelColor.r"},
+        {"green", "pixelColor.g"},
+        {"blue", "pixelColor.b"},
+        {"alpha", "pixelColor.a"}
+    };
+    return rewrites;
+}
+
 class GLSLGenerator {
 public:
     GLSLGenerator(projectm_eval_context* context);
     std::string generate(const prjm_eval_exptreenode* tree);
+    std::string generate(const prjm_eval_exptreenode* tree, const std::unordered_map<std::string, std::string>& variableOverrides);
 
 private:
+    std::string generateWithOverrides(const prjm_eval_exptreenode* tree, const std::unordered_map<std::string, std::string>* overrides);
     std::string traverseNode(const prjm_eval_exptreenode* node);
     bool isOperator(const prjm_eval_exptreenode* node);
     bool isComparison(const prjm_eval_exptreenode* node);
@@ -127,10 +147,12 @@ private:
     std::unordered_map<void*, std::string> m_func_map;
     std::set<void*> m_comparison_funcs;
     projectm_eval_context* m_context;
+    const std::unordered_map<std::string, std::string>* m_variableOverrides;
 };
 
 GLSLGenerator::GLSLGenerator(projectm_eval_context* context)
     : m_context(context)
+    , m_variableOverrides(nullptr)
 {
     m_func_map[(void*)prjm_eval_func_execute_list] = "execute_list";
     m_func_map[(void*)prjm_eval_func_add] = "+";
@@ -161,8 +183,10 @@ GLSLGenerator::GLSLGenerator(projectm_eval_context* context)
     m_func_map[(void*)prjm_eval_func_asin] = "asin";
     m_func_map[(void*)prjm_eval_func_acos] = "acos";
     m_func_map[(void*)prjm_eval_func_atan] = "atan";
+    m_func_map[(void*)prjm_eval_func_atan2] = "atan2";
     m_func_map[(void*)prjm_eval_func_sqrt] = "sqrt";
     m_func_map[(void*)prjm_eval_func_pow] = "pow";
+    m_func_map[(void*)prjm_eval_func_exp] = "exp";
     m_func_map[(void*)prjm_eval_func_abs] = "abs";
     m_func_map[(void*)prjm_eval_func_if] = "if";
     m_func_map[(void*)prjm_eval_func_sqr] = "sqr";
@@ -175,13 +199,30 @@ GLSLGenerator::GLSLGenerator(projectm_eval_context* context)
     m_func_map[(void*)prjm_eval_func_max] = "max";
     m_func_map[(void*)prjm_eval_func_floor] = "floor";
     m_func_map[(void*)prjm_eval_func_ceil] = "ceil";
+    m_func_map[(void*)prjm_eval_func_invsqrt] = "inversesqrt";
+    m_func_map[(void*)prjm_eval_func_sigmoid] = "sigmoid_eel";
     m_func_map[(void*)prjm_eval_func_bnot] = "bnot";
     m_func_map[(void*)prjm_eval_func_boolean_and_func] = "band";
     m_func_map[(void*)prjm_eval_func_boolean_or_func] = "bor";
+    m_func_map[(void*)prjm_eval_func_boolean_and_op] = "boolean_and_op_eel";
+    m_func_map[(void*)prjm_eval_func_boolean_or_op] = "boolean_or_op_eel";
+    m_func_map[(void*)prjm_eval_func_exec2] = "exec2_helper";
+    m_func_map[(void*)prjm_eval_func_exec3] = "exec3_helper";
 }
 
 std::string GLSLGenerator::generate(const prjm_eval_exptreenode* tree) {
+    return generateWithOverrides(tree, nullptr);
+}
+
+std::string GLSLGenerator::generate(const prjm_eval_exptreenode* tree, const std::unordered_map<std::string, std::string>& variableOverrides) {
+    return generateWithOverrides(tree, &variableOverrides);
+}
+
+std::string GLSLGenerator::generateWithOverrides(const prjm_eval_exptreenode* tree, const std::unordered_map<std::string, std::string>* overrides) {
     if (!tree) return "";
+    const auto* previousOverrides = m_variableOverrides;
+    m_variableOverrides = overrides;
+
     std::string result;
     if (tree->func == prjm_eval_func_execute_list) {
         if (tree->args) {
@@ -192,6 +233,8 @@ std::string GLSLGenerator::generate(const prjm_eval_exptreenode* tree) {
     } else {
         result += "    " + traverseNode(tree) + ";\n";
     }
+
+    m_variableOverrides = previousOverrides;
     return result;
 }
 
@@ -208,11 +251,34 @@ std::string GLSLGenerator::traverseNode(const prjm_eval_exptreenode* node) {
     }
     if (isVariable(node)) {
         std::string varName = getVariableName(node);
+        if (m_variableOverrides) {
+            auto overrideIt = m_variableOverrides->find(varName);
+            if (overrideIt != m_variableOverrides->end()) {
+                return overrideIt->second;
+            }
+        }
         auto it = milkToGLSLVars.find(varName);
         return (it != milkToGLSLVars.end()) ? it->second : varName;
     }
     if (isAssignment(node)) {
         return traverseNode(node->args[0]) + " = " + traverseNode(node->args[1]);
+    }
+    if (node->func == prjm_eval_func_neg) {
+        return "(-" + traverseNode(node->args[0]) + ")";
+    }
+    if (node->func == prjm_eval_func_add_op || node->func == prjm_eval_func_sub_op || node->func == prjm_eval_func_mul_op ||
+        node->func == prjm_eval_func_div_op || node->func == prjm_eval_func_mod_op || node->func == prjm_eval_func_bitwise_and_op ||
+        node->func == prjm_eval_func_bitwise_or_op || node->func == prjm_eval_func_pow_op) {
+        std::string lhs = traverseNode(node->args[0]);
+        std::string rhs = traverseNode(node->args[1]);
+        if (node->func == prjm_eval_func_add_op) return lhs + " = " + lhs + " + " + rhs;
+        if (node->func == prjm_eval_func_sub_op) return lhs + " = " + lhs + " - " + rhs;
+        if (node->func == prjm_eval_func_mul_op) return lhs + " = " + lhs + " * " + rhs;
+        if (node->func == prjm_eval_func_div_op) return lhs + " = " + lhs + " / " + rhs;
+        if (node->func == prjm_eval_func_mod_op) return lhs + " = mod(" + lhs + ", " + rhs + ")";
+        if (node->func == prjm_eval_func_bitwise_and_op) return lhs + " = float(int(" + lhs + ") & int(" + rhs + "))";
+        if (node->func == prjm_eval_func_bitwise_or_op) return lhs + " = float(int(" + lhs + ") | int(" + rhs + "))";
+        return lhs + " = pow(" + lhs + ", " + rhs + ")";
     }
     std::string funcName = getFunctionName(node);
     if (isOperator(node)) {
@@ -235,11 +301,17 @@ std::string GLSLGenerator::traverseNode(const prjm_eval_exptreenode* node) {
             // Otherwise, treat it as a float and compare to 0.0
             return "((" + cond + " != 0.0) ? (" + traverseNode(node->args[1]) + ") : (" + traverseNode(node->args[2]) + "))";
         }
+        if (funcName == "atan2") {
+            return "atan(" + traverseNode(node->args[0]) + ", " + traverseNode(node->args[1]) + ")";
+        }
         if (funcName == "sqr") return "((" + traverseNode(node->args[0]) + ")*(" + traverseNode(node->args[0]) + "))";
         if (funcName == "rand") return "(rand(uv) * " + traverseNode(node->args[0]) + ")";
         if (funcName == "bnot") return "float_from_bool(" + traverseNode(node->args[0]) + " == 0.0)";
         if (funcName == "band") return "float_from_bool((" + traverseNode(node->args[0]) + " != 0.0) && (" + traverseNode(node->args[1]) + " != 0.0))";
         if (funcName == "bor") return "float_from_bool((" + traverseNode(node->args[0]) + " != 0.0) || (" + traverseNode(node->args[1]) + " != 0.0))";
+        if (funcName == "boolean_and_op_eel") return "boolean_and_op_eel(" + traverseNode(node->args[0]) + ", " + traverseNode(node->args[1]) + ")";
+        if (funcName == "boolean_or_op_eel") return "boolean_or_op_eel(" + traverseNode(node->args[0]) + ", " + traverseNode(node->args[1]) + ")";
+        if (funcName == "sigmoid_eel") return "sigmoid_eel(" + traverseNode(node->args[0]) + ", " + traverseNode(node->args[1]) + ")";
 
         std::string args;
         if (node->args) {
@@ -471,7 +543,7 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
     auto userVars = findUserVars(internal_context(context));
     GLSLGenerator generator(context);
     std::string perFrameGLSL = generator.generate(perFrameAST);
-    std::string perPixelGLSL = generator.generate(perPixelAST);
+    std::string perPixelGLSL = generator.generate(perPixelAST, perPixelVariableRewrites());
 
     // Cleanup the combined ASTs
     if(perFrameAST) prjm_eval_destroy_exptreenode(perFrameAST);
@@ -489,6 +561,23 @@ float rand(vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 )___";
+    glsl += "const float EPSILON_EEL = 0.00001;\n";
+    glsl += "float sigmoid_eel(float value, float response) {\n";
+    glsl += "    float t = 1.0 + exp(-(value) * response);\n";
+    glsl += "    return (abs(t) > EPSILON_EEL) ? (1.0 / t) : 0.0;\n";
+    glsl += "}\n";
+    glsl += "float boolean_and_op_eel(float lhs, float rhs) {\n";
+    glsl += "    return (abs(lhs) > EPSILON_EEL && abs(rhs) > EPSILON_EEL) ? 1.0 : 0.0;\n";
+    glsl += "}\n";
+    glsl += "float boolean_or_op_eel(float lhs, float rhs) {\n";
+    glsl += "    return (abs(lhs) > EPSILON_EEL) ? 1.0 : ((abs(rhs) > EPSILON_EEL) ? 1.0 : 0.0);\n";
+    glsl += "}\n";
+    glsl += "float exec2_helper(float first, float second) {\n";
+    glsl += "    return second;\n";
+    glsl += "}\n";
+    glsl += "float exec3_helper(float first, float second, float third) {\n";
+    glsl += "    return third;\n";
+    glsl += "}\n";
     glsl += waveformGLSL;
     glsl += "\n// Standard RaymarchVibe uniforms\n";
     glsl += "uniform float iTime;\n";
@@ -529,6 +618,7 @@ float rand(vec2 co){
     if (!userVars.empty()) {
         for (const auto& var : userVars) glsl += "    float " + var + " = 0.0;\n";
     }
+    glsl += "    vec4 pixelColor = vec4(0.0, 0.0, 0.0, 0.0);\n";
     glsl += "\n    // Per-frame logic\n";
     glsl += perFrameGLSL;
     glsl += "\n    // Initialize per-pixel state from per-frame results\n";
@@ -594,12 +684,76 @@ float rand(vec2 co){
     FragColor = vec4(clamp(composedColor.rgb, 0.0, 1.0), clamp(composedColor.a, 0.0, 1.0));
 }
 )___";
+    glsl += "\n    // Final color composition\n";
+    glsl += "    // Sample the previous frame's output (feedback buffer) with warped UVs.\n";
+    glsl += "    vec4 feedback = texture(iChannel0, transformed_uv);\n";
+    glsl += "    feedback.rgb = mix(feedback.rgb, pixelColor.rgb, clamp(pixelColor.a, 0.0, 1.0));\n";
+    glsl += "\n    // Apply decay, which is essential for the classic MilkDrop fade effect.\n";
+    glsl += "    feedback.rgb *= decay;\n";
+    glsl += "\n    // The 'ob_' variables are for the outer border. We'll use them to tint the feedback color.\n";
+    glsl += "    vec4 border_color = vec4(ob_r, ob_g, ob_b, ob_a);\n";
+    glsl += "    FragColor = mix(feedback, border_color, border_color.a);\n\n";
+    glsl += "    // Additive blending for waves and shapes\n";
+    glsl += "    vec4 wave_color = vec4(wave_r, wave_g, wave_b, wave_a);\n";
+    glsl += "    float wave_intensity = draw_wave(uv, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery) + draw_wave(uv, iAudioBands.zw, 128, wave_x, wave_y, wave_mystery);\n";
+    glsl += "    FragColor = mix(FragColor, wave_color, wave_intensity * wave_a);\n";
+    glsl += "}\n";
     return glsl;
 }
 
 
+bool runSelfTests() {
+    projectm_eval_context* context = projectm_eval_context_create(nullptr, nullptr);
+    if (!context) {
+        std::cerr << "Self-test: failed to create evaluation context." << std::endl;
+        return false;
+    }
+
+    prjm_eval_exptreenode* perPixelAst = compile_statements(context, "red = min(max(zoomexp, 0.0), 1.0);\nalpha = 1;\n");
+    if (!perPixelAst) {
+        std::cerr << "Self-test: failed to compile synthetic per-pixel code." << std::endl;
+        projectm_eval_context_destroy(context);
+        return false;
+    }
+
+    GLSLGenerator generator(context);
+    std::string perPixelGLSL = generator.generate(perPixelAst, perPixelVariableRewrites());
+    bool rewriteOk = perPixelGLSL.find("pixelColor.r") != std::string::npos && perPixelGLSL.find("/* unknown node */") == std::string::npos;
+
+    prjm_eval_destroy_exptreenode(perPixelAst);
+    projectm_eval_context_destroy(context);
+
+    if (!rewriteOk) {
+        std::cerr << "Self-test: per-pixel variable rewrite failed." << std::endl;
+        return false;
+    }
+
+    libprojectM::PresetFileParser parser;
+    if (!parser.Read("baked.milk")) {
+        std::cerr << "Self-test: unable to read baked.milk preset." << std::endl;
+        return false;
+    }
+
+    std::string bakedGLSL = translateToGLSL(parser.GetCode("per_frame_"), parser.GetCode("per_pixel_"), parser.PresetValues());
+    if (bakedGLSL.find("warp = 1.42") == std::string::npos || bakedGLSL.find("/* unknown node */") != std::string::npos) {
+        std::cerr << "Self-test: baked.milk translation missing expected per-pixel output." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 int main(int argc, char* argv[]) {
     std::setlocale(LC_NUMERIC, "C");
+    if (argc == 2 && std::string(argv[1]) == "--self-test") {
+        bool success = runSelfTests();
+        if (success) {
+            std::cout << "Self-tests passed" << std::endl;
+            return 0;
+        }
+        std::cerr << "Self-tests failed" << std::endl;
+        return 1;
+    }
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <input.milk> <output.frag>\n";
         return 1;
