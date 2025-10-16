@@ -1,3 +1,5 @@
 # Build artifacts
 build/
 vendor/documentation/
+*.frag
+output.frag

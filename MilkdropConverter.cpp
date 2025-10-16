@@ -621,32 +621,21 @@ float rand(vec2 co){
     glsl += "    vec4 pixelColor = vec4(0.0, 0.0, 0.0, 0.0);\n";
     glsl += "\n    // Per-frame logic\n";
     glsl += perFrameGLSL;
-    glsl += "\n    // Initialize per-pixel state from per-frame results\n";
-    glsl += "    vec2 pixelUV = uv;\n";
-    glsl += "    vec4 pixelColor = vec4(r, g, b, a);\n";
-    glsl += "    float pixelZoom = zoom;\n";
-    glsl += "    float pixelZoomExp = zoomexp;\n";
-    glsl += "    float pixelWarp = warp;\n";
-    glsl += "    float pixelRotate = rot;\n";
-    glsl += "    vec2 pixelCenter = vec2(cx, cy);\n";
-    glsl += "    vec2 pixelTranslate = vec2(dx, dy);\n";
-    glsl += "    vec2 pixelScale = vec2(sx, sy);\n";
-    glsl += "    float pixelDecay = decay;\n";
     glsl += "\n    // Per-pixel logic\n";
     glsl += perPixelGLSL;
-    glsl += "    // Capture per-pixel outputs for final composition\n";
-    glsl += "    pixelUV = uv;\n";
-    glsl += "    pixelColor = vec4(r, g, b, a);\n";
-    glsl += "    pixelZoom = zoom;\n";
-    glsl += "    pixelZoomExp = zoomexp;\n";
-    glsl += "    pixelWarp = warp;\n";
-    glsl += "    pixelRotate = rot;\n";
-    glsl += "    pixelCenter = vec2(cx, cy);\n";
-    glsl += "    pixelTranslate = vec2(dx, dy);\n";
-    glsl += "    pixelScale = vec2(sx, sy);\n";
-    glsl += "    pixelDecay = decay;\n";
     glsl += R"___(
     // Apply coordinate transformations using per-pixel state.
+    vec2 pixelCenter = vec2(cx, cy);
+    vec2 pixelTranslate = vec2(dx, dy);
+    vec2 pixelScale = vec2(sx, sy);
+    float pixelZoom = zoom;
+    float pixelZoomExp = zoomexp;
+    float pixelWarp = warp;
+    float pixelRotate = rot;
+    float pixelDecay = decay;
+    pixelColor = vec4(r, g, b, a);
+    vec2 pixelUV = uv;
+
     vec2 centeredUV = pixelUV - pixelCenter;
     mat2 rotationMatrix = mat2(cos(pixelRotate), -sin(pixelRotate), sin(pixelRotate), cos(pixelRotate));
     centeredUV = rotationMatrix * centeredUV;
@@ -684,20 +673,6 @@ float rand(vec2 co){
     FragColor = vec4(clamp(composedColor.rgb, 0.0, 1.0), clamp(composedColor.a, 0.0, 1.0));
 }
 )___";
-    glsl += "\n    // Final color composition\n";
-    glsl += "    // Sample the previous frame's output (feedback buffer) with warped UVs.\n";
-    glsl += "    vec4 feedback = texture(iChannel0, transformed_uv);\n";
-    glsl += "    feedback.rgb = mix(feedback.rgb, pixelColor.rgb, clamp(pixelColor.a, 0.0, 1.0));\n";
-    glsl += "\n    // Apply decay, which is essential for the classic MilkDrop fade effect.\n";
-    glsl += "    feedback.rgb *= decay;\n";
-    glsl += "\n    // The 'ob_' variables are for the outer border. We'll use them to tint the feedback color.\n";
-    glsl += "    vec4 border_color = vec4(ob_r, ob_g, ob_b, ob_a);\n";
-    glsl += "    FragColor = mix(feedback, border_color, border_color.a);\n\n";
-    glsl += "    // Additive blending for waves and shapes\n";
-    glsl += "    vec4 wave_color = vec4(wave_r, wave_g, wave_b, wave_a);\n";
-    glsl += "    float wave_intensity = draw_wave(uv, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery) + draw_wave(uv, iAudioBands.zw, 128, wave_x, wave_y, wave_mystery);\n";
-    glsl += "    FragColor = mix(FragColor, wave_color, wave_intensity * wave_a);\n";
-    glsl += "}\n";
     return glsl;
 }
 
