@@ -98,6 +98,9 @@ def validate_fixture(converter: Path, fixtures_dir: Path, preset_name: str) -> N
         run_converter(converter, preset_path, output_path)
         fragment = output_path.read_text()
 
+    if "uniform float u_wave_quality" not in fragment:
+        raise AssertionError("Wave quality uniform not present in generated GLSL")
+
     expectations = WAVE_FIXTURES[preset_name]
     comment = expectations["mode_comment"]
     if comment not in fragment:
@@ -108,6 +111,12 @@ def validate_fixture(converter: Path, fixtures_dir: Path, preset_name: str) -> N
             raise AssertionError(
                 f"Expected helper '{function_name}' not found in GLSL for {preset_name}"
             )
+    
+    call_pattern = expectations["call"]
+    if call_pattern not in fragment:
+        raise AssertionError(
+            f"Expected call pattern '{call_pattern}' not found in GLSL for {preset_name}"
+        )
 
     for snippet in COMMON_SNIPPETS:
         if snippet not in fragment:

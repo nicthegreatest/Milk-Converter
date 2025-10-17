@@ -13,6 +13,8 @@
  */
 class WaveModeRenderer {
 public:
+    explicit WaveModeRenderer(const std::map<std::string, std::string>& presetValues)
+        : m_presetValues(presetValues) {}
     virtual ~WaveModeRenderer() = default;
 
     /// Optional helpers shared across modes (defaults to the common helpers).
@@ -30,6 +32,9 @@ public:
     /// Generate the GLSL snippet for the requested wave mode.
     static std::string generateWaveformGLSL(int nWaveMode, const std::map<std::string, std::string>& presetValues);
 
+    /// Generate the draw_wave call pattern for the requested wave mode.
+    static std::string generateCallPattern(int nWaveMode, const std::map<std::string, std::string>& presetValues);
+
 protected:
     /// Factory method returning the appropriate renderer implementation.
     static std::unique_ptr<WaveModeRenderer> create(int nWaveMode, const std::map<std::string, std::string>& presetValues);
@@ -39,4 +44,10 @@ protected:
 
     /// Fallback GLSL when a mode is unsupported.
     static std::string generateFallback();
+
+    float presetFloat(const std::string& key, float fallback) const;
+    int presetInt(const std::string& key, int fallback) const;
+
+    /// Preset values for tuning parameters
+    const std::map<std::string, std::string>& m_presetValues;
 };
