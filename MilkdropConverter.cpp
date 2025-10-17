@@ -81,6 +81,7 @@ const std::unordered_map<std::string, UniformControl> uniformControls = {
     {"wave_x", {"0.5", "slider", "0.0", "1.0", "0.01"}},
     {"wave_y", {"0.5", "slider", "0.0", "1.0", "0.01"}},
     {"wave_mystery", {"0.0", "slider", "-1.0", "1.0", "0.01"}},
+    {"wave_quality", {"1.0", "slider", "0.1", "1.0", "0.05"}},
     {"decay", {"0.98", "slider", "0.9", "1.0", "0.001"}},
     {"gamma", {"1.0", "slider", "0.1", "5.0", "0.01"}},
     {"brighten", {"0.0", "slider", "0.0", "1.0", "1.0"}},
@@ -468,7 +469,12 @@ std::set<std::string> findUserVars(prjm_eval_compiler_context_t* ctx) {
     return userVars;
 }
 
-std::string generateWaveformGLSL(const libprojectM::PresetFileParser::ValueMap& presetValues) {
+struct WaveformComponents {
+    std::string glsl;
+    std::string callPattern;
+};
+
+WaveformComponents generateWaveformComponents(const libprojectM::PresetFileParser::ValueMap& presetValues) {
     // Extract nWaveMode from preset values, default to 6
     // PresetFileParser lowercases all keys, so we need to look for "nwavemode"
     int nWaveMode = 6;
@@ -476,13 +482,15 @@ std::string generateWaveformGLSL(const libprojectM::PresetFileParser::ValueMap& 
     if (it != presetValues.end()) {
         try {
             nWaveMode = std::stoi(it->second);
-        } catch (const std::logic_error& e) {
+        } catch (const std::logic_error&) {
             // ignore and use default
         }
     }
 
-    // Use the WaveModeRenderer strategy to generate the appropriate GLSL
-    return WaveModeRenderer::generateWaveformGLSL(nWaveMode, presetValues);
+    WaveformComponents components;
+    components.glsl = WaveModeRenderer::generateWaveformGLSL(nWaveMode, presetValues);
+    components.callPattern = WaveModeRenderer::generateCallPattern(nWaveMode, presetValues);
+    return components;
 }
 
 std::string translateToGLSL(const std::string& perFrame, const std::string& perPixel, const libprojectM::PresetFileParser::ValueMap& presetValues) {
@@ -506,7 +514,7 @@ std::string translateToGLSL(const std::string& perFrame, const std::string& perP
 
     projectm_eval_context_destroy(context);
 
-    std::string waveformGLSL = generateWaveformGLSL(presetValues);
+    auto waveformComponents = generateWaveformComponents(presetValues);
 
     std::string glsl = "#version 330 core\n\n";
     glsl += "out vec4 FragColor;\n\n";
@@ -533,7 +541,7 @@ float rand(vec2 co){
     glsl += "float exec3_helper(float first, float second, float third) {\n";
     glsl += "    return third;\n";
     glsl += "}\n";
-    glsl += waveformGLSL;
+    glsl += waveformComponents.glsl;
     glsl += "\n// Standard RaymarchVibe uniforms\n";
     glsl += "uniform float iTime;\n";
     glsl += "uniform vec2 iResolution;\n";
@@ -653,7 +661,9 @@ float rand(vec2 co){
 
     // Overlay waveforms.
     vec4 wave_color = clamp(vec4(wave_r, wave_g, wave_b, wave_a), 0.0, 1.0);
-    float wave_intensity = draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery);
+    float wave_intensity = )___";
+    glsl += waveformComponents.callPattern;
+    glsl += R"___(;
     composedColor.rgb = mix(composedColor.rgb, wave_color.rgb, clamp(wave_intensity * wave_color.a, 0.0, 1.0));
 
     FragColor = vec4(clamp(composedColor.rgb, 0.0, 1.0), clamp(composedColor.a, 0.0, 1.0));

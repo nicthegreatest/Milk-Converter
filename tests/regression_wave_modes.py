@@ -16,30 +16,37 @@ WAVE_FIXTURES = {
     "wave_mode_0.milk": {
         "mode_comment": "// Mode 0: Spectrum circle bars",
         "functions": ["wave_mode0_vertex"],
+        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
     },
     "wave_mode_2.milk": {
         "mode_comment": "// Mode 2: Centered dots with trails",
         "functions": ["wave_mode2_vertex"],
+        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
     },
     "wave_mode_3.milk": {
         "mode_comment": "// Mode 3: Volume-modulated centered dots",
         "functions": ["wave_mode3_vertex"],
+        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, iAudioBands.z, wave_quality)",
     },
     "wave_mode_4.milk": {
         "mode_comment": "// Mode 4: Derivative line (scripted horizontal display)",
         "functions": ["wave_mode_line_vertex"],
+        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
     },
     "wave_mode_5.milk": {
         "mode_comment": "// Mode 5: Explosive hash radial pattern",
         "functions": ["wave_mode5_vertex"],
+        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
     },
     "wave_mode_6.milk": {
         "mode_comment": "// Mode 6: Angle-adjustable line spectrum",
         "functions": ["wave_mode6_vertex"],
+        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
     },
     "wave_mode_7.milk": {
         "mode_comment": "// Mode 7: Double spectrum lines",
         "functions": ["wave_mode7_vertex"],
+        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
     },
 }
 
@@ -70,6 +77,9 @@ def validate_fixture(converter: Path, fixtures_dir: Path, preset_name: str) -> N
         run_converter(converter, preset_path, output_path)
         fragment = output_path.read_text()
 
+    if "uniform float u_wave_quality" not in fragment:
+        raise AssertionError("Wave quality uniform not present in generated GLSL")
+
     expectations = WAVE_FIXTURES[preset_name]
     comment = expectations["mode_comment"]
     if comment not in fragment:
@@ -80,6 +90,12 @@ def validate_fixture(converter: Path, fixtures_dir: Path, preset_name: str) -> N
             raise AssertionError(
                 f"Expected helper '{function_name}' not found in GLSL for {preset_name}"
             )
+    
+    call_pattern = expectations["call"]
+    if call_pattern not in fragment:
+        raise AssertionError(
+            f"Expected call pattern '{call_pattern}' not found in GLSL for {preset_name}"
+        )
 
 
 def main() -> int:

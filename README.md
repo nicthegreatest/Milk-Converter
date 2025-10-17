@@ -53,7 +53,10 @@ This tool functions as a translator, converting the logic from a `.milk` preset 
 
 5.  **UI Controls:** To make the converted shaders interactive, the converter adds JSON-formatted comments to the generated `uniform` declarations. RaymarchVibe's UI can parse these annotations to create real-time control widgets for the preset's parameters (zoom, rot, decay, colors, etc.).
 
-6.  **Waveform Integration:** For presets with waveforms enabled, the converter generates a `draw_wave()` function that replicates the waveform rendering logic, currently supporting `nWaveMode=6` (Line Wave).
+6.  **Waveform Integration:** For presets with waveforms enabled, the converter generates a mode-specific `draw_wave()` function. All implemented modes (0, 2-8) include quality-aware tuning with:
+    - `wave_quality` uniform: 0.1–1.0 slider controlling sample count, smoothing, and intensity scaling
+    - Per-mode calibration: Safe sample caps, fallback heuristics, and smoothing adjustments preserve visual fidelity while allowing performance tradeoffs
+    - Dynamic call patterns: Volume-modulated modes (3) receive extra parameters; all modes propagate quality uniformly
 
 ## 3. Build Instructions
 
@@ -117,15 +120,16 @@ Once built, you can run the converter from the project's root directory with the
 
 ## 5. Project Status
 
-### Completed Features (v0.8.2)
+### Completed Features (v0.9.0)
 - ✅ **Complete per_frame Logic Conversion:** Converts complex MilkDrop expressions including beat detection, color modulation, and audio-reactive calculations
 - ✅ **Complete per_pixel Logic Conversion:** Full implementation of per-pixel expression translation with proper variable mapping (red/green/blue/alpha → pixelColor components)
 - ✅ **Multi-line Expression Support:** Handles nested conditionals like `pulsefreq=if(equal(pulsefreq,0),2,if(pulse,...))`
 - ✅ **Full Variable Mapping:** Supports q1-q32, t1-t8, audio bands, and all built-in functions
 - ✅ **UI Controls Generation:** Produces JSON-annotated uniforms for real-time parameter adjustment
-- ✅ **Waveform Rendering:** Supports Line Wave mode (nWaveMode=6)
+- ✅ **Waveform Rendering:** Supports all classic wave modes (0, 2-8) with quality-aware tuning
+- ✅ **Performance Controls:** `wave_quality` uniform balances visual fidelity vs throughput within safe iteration bounds
 - ✅ **Build System:** Standalone CMake-based build with vendored dependencies
-- ✅ **Regression Testing:** Automated CTest suite validates per-pixel translation correctness
+- ✅ **Regression Testing:** Automated CTest suite validates per-pixel translation and quality controls
 - ✅ **RaymarchVibe GLSL Compliance:** Generated shaders conform to [RaymarchVibe GLSL specifications](https://github.com/nicthegreatest/raymarchvibe/blob/main/documentation/SHADERS.md)
 
 ### Current Status
@@ -145,14 +149,12 @@ The converter successfully translates both per-frame and per-pixel logic from Mi
 
 ### Known Issues & Next Steps
 - **Feedback Buffer Handling:** Converted shaders may exhibit rendering differences compared to manually-written shaders due to feedback loop initialization patterns (see SHADERS.md diagnostics)
-- **Additional Wave Modes:** Currently supports nWaveMode=6; modes 0-5 and 7+ pending implementation
 - **Custom Shapes:** Shape rendering not yet implemented
 
 ### Development Priorities
-1. Add support for additional wave modes (0-5, 7+)
-2. Implement custom shape rendering
-3. Expand regression test coverage with additional preset fixtures
-4. (Future Enhancement) Integrate HLSL shader translation for warp/comp shaders
+1. Implement custom shape rendering
+2. Expand regression test coverage with additional preset fixtures
+3. (Future Enhancement) Integrate HLSL shader translation for warp/comp shaders
 
 ## 6. Regression Testing
 
@@ -214,7 +216,20 @@ python3 tests/regression_wave_modes.py --converter build/MilkdropConverter --fix
 **Test Details:**
 - Each wave mode preset sets a specific `nWaveMode` value and minimal parameters
 - The test script verifies that the appropriate mode-specific GLSL functions are generated
+- Validates that `wave_quality` uniform is present and propagated through draw call patterns
 - Ensures proper uniform parameterization (no direct uniform access in helper functions)
+- Checks that mode-aware call patterns match expectations (e.g., Mode 3 includes `iAudioBands.z` for volume modulation)
+
+### 6.3 Balancing waveform quality vs throughput
+
+All generated shaders expose `u_wave_quality` (0.1–1.0 slider) to help authors tune performance on constrained hardware. Suggested workflow:
+
+1. **Start at 1.0** – Highest fidelity with per-mode calibrated sample counts, edge smoothing, and intensity scaling.
+2. **Dial towards 0.5** – Halves iteration budgets while expanding smoothing kernels to keep outlines coherent. Ideal for mid-tier GPUs.
+3. **Drop to 0.25–0.3** – Activates lightweight fallbacks (thicker strokes, reduced sampling) to preserve rhythm cues when fill-rate is limited.
+
+Every wave mode derives its safe sample cap from the preset metadata, then applies `wave_quality` inside the GLSL loops. This guarantees the waveform never exceeds the converter’s loop ceilings while maintaining consistent animation speed and audio response.
+
 ### 7.1. Project Structure
 
 ```

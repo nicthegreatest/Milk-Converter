@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2025-10-17
+
+### Added
+- **Waveform Quality Controls:** Introduced the `wave_quality` UI control/uniform so RaymarchVibe users can trade waveform fidelity for throughput without breaking MilkDrop aesthetics. The converter now emits mode-aware draw call patterns that pipe the quality slider through every `draw_wave` signature.
+- **Performance Regression Coverage:** Updated `tests/regression_wave_modes.py` to assert the presence of quality-aware call patterns and uniforms for every supported MilkDrop wave mode.
+
+### Changed
+- **Mode Calibration:** Tuned per-mode smoothing, intensity scaling, and sample budgeting to remain visually faithful under loop caps while scaling with `wave_quality`.
+- **Fallback Safety:** Added lightweight fallbacks for heavy wave modes when quality is reduced, keeping audio-reactive outlines legible even at aggressive performance caps.
+
 ## [0.8.3] - 2025-10-16
 
 ### Fixed

@@ -4,6 +4,9 @@ namespace {
 
 class CircleWaveRenderer final : public WaveModeRenderer {
 public:
+    explicit CircleWaveRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode0_vertex(float radius, float angle, vec2 center, vec2 aspect)
@@ -17,7 +20,7 @@ vec2 wave_mode0_vertex(float radius, float angle, vec2 center, vec2 aspect)
     std::string drawFunction() const override {
         return R"___(
 // Mode 0: Spectrum circle bars
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     float intensity = 0.0;
     vec2 center = vec2(wave_x, wave_y);
@@ -27,7 +30,10 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
     mystery = abs(fract(mystery));
     mystery = mystery * 2.0 - 1.0;
 
-    int num_samples = min(samples / 2, 256);
+    int quality_samples = int(float(samples) * clamp(wave_quality, 0.1, 1.0));
+    int num_samples = min(quality_samples / 2, 256);
+    float smoothing_width = 0.01 / clamp(wave_quality, 0.5, 1.0);
+    
     for (int i = 0; i < num_samples - 1; ++i)
     {
         float displacement1 = (i % 2 == 0) ? audio_data.x : audio_data.y;
@@ -39,23 +45,26 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         vec2 p1 = wave_mode0_vertex(radius1, angle1, center, aspect);
         vec2 p2 = wave_mode0_vertex(radius2, angle2, center, aspect);
         float dist = distance_to_line_segment(uv, p1, p2);
-        intensity += (1.0 - smoothstep(0.0, 0.01, dist));
+        intensity += (1.0 - smoothstep(0.0, smoothing_width, dist));
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
         return R"___(
-draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery)
+draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)
 )___";
     }
 };
 
 class CenteredSpiroRenderer final : public WaveModeRenderer {
 public:
+    explicit CenteredSpiroRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode2_vertex(float displacement_x, float displacement_y, vec2 center, vec2 aspect, float wave_scale)
@@ -69,13 +78,15 @@ vec2 wave_mode2_vertex(float displacement_x, float displacement_y, vec2 center, 
     std::string drawFunction() const override {
         return R"___(
 // Mode 2: Centered dots with trails
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     float intensity = 0.0;
     vec2 center = vec2(wave_x, wave_y);
     vec2 aspect = wave_aspect();
     float wave_scale = 0.25;
-    int num_samples = min(samples, 512);
+    int quality_samples = int(float(samples) * clamp(wave_quality, 0.1, 1.0));
+    int num_samples = min(quality_samples, 512);
+    float size_adjust = 1.0 + (1.0 - wave_quality) * 0.5;
 
     for (int i = 0; i < num_samples; ++i)
     {
@@ -84,21 +95,24 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         vec2 point = wave_mode2_vertex(displacement_x, displacement_y, center, aspect, wave_scale);
         float fade = 1.0 - float(i) / float(num_samples);
         float dist = distance(uv, point);
-        intensity += (1.0 - smoothstep(0.0, 0.005 + 0.01 * fade, dist));
+        intensity += (1.0 - smoothstep(0.0, (0.005 + 0.01 * fade) * size_adjust, dist));
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class CenteredSpiroVolumeRenderer final : public WaveModeRenderer {
 public:
+    explicit CenteredSpiroVolumeRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode3_vertex(float displacement_x, float displacement_y, vec2 center, vec2 aspect, float wave_scale)
@@ -112,7 +126,7 @@ vec2 wave_mode3_vertex(float displacement_x, float displacement_y, vec2 center, 
     std::string drawFunction() const override {
         return R"___(
 // Mode 3: Volume-modulated centered dots
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float volume_level)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float volume_level, float wave_quality)
 {
     float intensity = 0.0;
     vec2 center = vec2(wave_x, wave_y);
@@ -120,7 +134,9 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
     float base_scale = 0.25;
     float volume_factor = clamp(volume_level * volume_level * 1.3, 0.1, 2.5);
     float wave_scale = base_scale * volume_factor;
-    int num_samples = min(samples, 512);
+    int quality_samples = int(float(samples) * clamp(wave_quality, 0.1, 1.0));
+    int num_samples = min(quality_samples, 512);
+    float size_adjust = 1.0 + (1.0 - wave_quality) * 0.5;
 
     for (int i = 0; i < num_samples; ++i)
     {
@@ -129,23 +145,26 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         vec2 point = wave_mode3_vertex(displacement_x, displacement_y, center, aspect, wave_scale);
         float fade = 1.0 - float(i) / float(num_samples);
         float dist = distance(uv, point);
-        intensity += (1.0 - smoothstep(0.0, 0.007 + 0.01 * fade, dist));
+        intensity += (1.0 - smoothstep(0.0, (0.007 + 0.01 * fade) * size_adjust, dist));
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
         return R"___(
-draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, iAudioBands.z)
+draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, iAudioBands.z, wave_quality)
 )___";
     }
 };
 
 class DerivativeLineRenderer final : public WaveModeRenderer {
 public:
+    explicit DerivativeLineRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode_line_vertex(float edge_x, float edge_y, float distance_x, float distance_y,
@@ -161,11 +180,13 @@ vec2 wave_mode_line_vertex(float edge_x, float edge_y, float distance_x, float d
     std::string drawFunction() const override {
         return R"___(
 // Mode 4: Derivative line (scripted horizontal display)
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     float intensity = 0.0;
     float wave_scale = 0.25;
-    int num_samples = min(samples / 2, 256);
+    int quality_samples = int(float(samples) * clamp(wave_quality, 0.1, 1.0));
+    int num_samples = min(quality_samples / 2, 256);
+    float smoothing_width = 0.01 / clamp(wave_quality, 0.5, 1.0);
 
     float edge_x;
     float edge_y;
@@ -185,21 +206,24 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         vec2 p2 = wave_mode_line_vertex(edge_x, edge_y, distance_x, distance_y,
                                         perpendicular_dx, perpendicular_dy, float(i + 1), displacement2, wave_scale);
         float dist = distance_to_line_segment(uv, p1, p2);
-        intensity += (1.0 - smoothstep(0.0, 0.01, dist));
+        intensity += (1.0 - smoothstep(0.0, smoothing_width, dist));
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class ExplosiveHashRenderer final : public WaveModeRenderer {
 public:
+    explicit ExplosiveHashRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode5_vertex(float radius, float angle, vec2 center, vec2 aspect)
@@ -213,13 +237,15 @@ vec2 wave_mode5_vertex(float radius, float angle, vec2 center, vec2 aspect)
     std::string drawFunction() const override {
         return R"___(
 // Mode 5: Explosive hash radial pattern
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     float intensity = 0.0;
     vec2 center = vec2(wave_x, wave_y);
     vec2 aspect = wave_aspect();
     float wave_scale = 0.25;
-    int num_samples = min(samples / 2, 256);
+    int quality_samples = int(float(samples) * clamp(wave_quality, 0.1, 1.0));
+    int num_samples = min(quality_samples / 2, 256);
+    float size_adjust = 1.0 + (1.0 - wave_quality) * 0.4;
 
     for (int i = 0; i < num_samples; ++i)
     {
@@ -229,21 +255,24 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         float radius = 0.5 + 0.5 * displacement * wave_scale;
         vec2 point = wave_mode5_vertex(radius, angle, center, aspect);
         float dist = distance(uv, point);
-        intensity += (1.0 - smoothstep(0.0, 0.008, dist));
+        intensity += (1.0 - smoothstep(0.0, 0.008 * size_adjust, dist));
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class LineWaveRenderer final : public WaveModeRenderer {
 public:
+    explicit LineWaveRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode6_vertex(float edge_x, float edge_y, float distance_x, float distance_y,
@@ -259,11 +288,13 @@ vec2 wave_mode6_vertex(float edge_x, float edge_y, float distance_x, float dista
     std::string drawFunction() const override {
         return R"___(
 // Mode 6: Angle-adjustable line spectrum
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     float intensity = 0.0;
     float wave_scale = 0.25;
-    int num_samples = min(samples / 2, 256);
+    int quality_samples = int(float(samples) * clamp(wave_quality, 0.1, 1.0));
+    int num_samples = min(quality_samples / 2, 256);
+    float smoothing_width = 0.01 / clamp(wave_quality, 0.5, 1.0);
 
     float edge_x;
     float edge_y;
@@ -283,21 +314,24 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         vec2 p2 = wave_mode6_vertex(edge_x, edge_y, distance_x, distance_y,
                                     perpendicular_dx, perpendicular_dy, float(i + 1), displacement2, wave_scale);
         float dist = distance_to_line_segment(uv, p1, p2);
-        intensity += (1.0 - smoothstep(0.0, 0.01, dist));
+        intensity += (1.0 - smoothstep(0.0, smoothing_width, dist));
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class DoubleLineWaveRenderer final : public WaveModeRenderer {
 public:
+    explicit DoubleLineWaveRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode7_vertex(float edge_x, float edge_y, float distance_x, float distance_y,
@@ -313,11 +347,13 @@ vec2 wave_mode7_vertex(float edge_x, float edge_y, float distance_x, float dista
     std::string drawFunction() const override {
         return R"___(
 // Mode 7: Double spectrum lines
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     float intensity = 0.0;
     float wave_scale = 0.25;
-    int num_samples = min(samples / 2, 256);
+    int quality_samples = int(float(samples) * clamp(wave_quality, 0.1, 1.0));
+    int num_samples = min(quality_samples / 2, 256);
+    float smoothing_width = 0.01 / clamp(wave_quality, 0.5, 1.0);
 
     float edge_x;
     float edge_y;
@@ -337,28 +373,31 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         vec2 p2L = wave_mode7_vertex(edge_x, edge_y, distance_x, distance_y,
                                      perpendicular_dx, perpendicular_dy, float(i + 1), audio_data.x, wave_scale, separation);
         float distL = distance_to_line_segment(uv, p1L, p2L);
-        intensity += (1.0 - smoothstep(0.0, 0.01, distL));
+        intensity += (1.0 - smoothstep(0.0, smoothing_width, distL));
 
         vec2 p1R = wave_mode7_vertex(edge_x, edge_y, distance_x, distance_y,
                                      perpendicular_dx, perpendicular_dy, float(i), audio_data.y, wave_scale, -separation);
         vec2 p2R = wave_mode7_vertex(edge_x, edge_y, distance_x, distance_y,
                                      perpendicular_dx, perpendicular_dy, float(i + 1), audio_data.y, wave_scale, -separation);
         float distR = distance_to_line_segment(uv, p1R, p2R);
-        intensity += (1.0 - smoothstep(0.0, 0.01, distR));
+        intensity += (1.0 - smoothstep(0.0, smoothing_width, distR));
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class SpectrumLineRenderer final : public WaveModeRenderer {
 public:
+    explicit SpectrumLineRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode8_vertex(float edge_x, float edge_y, float distance_x, float distance_y,
@@ -374,10 +413,12 @@ vec2 wave_mode8_vertex(float edge_x, float edge_y, float distance_x, float dista
     std::string drawFunction() const override {
         return R"___(
 // Mode 8: Spectrum line (angled analyser)
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     float intensity = 0.0;
-    int num_samples = min(256, samples);
+    int quality_samples = int(float(samples) * clamp(wave_quality, 0.1, 1.0));
+    int num_samples = min(256, quality_samples);
+    float smoothing_width = 0.01 / clamp(wave_quality, 0.5, 1.0);
 
     float edge_x;
     float edge_y;
@@ -397,16 +438,16 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         vec2 p2 = wave_mode8_vertex(edge_x, edge_y, distance_x, distance_y,
                                     perpendicular_dx, perpendicular_dy, float(i + 1), displacement2);
         float dist = distance_to_line_segment(uv, p1, p2);
-        intensity += (1.0 - smoothstep(0.0, 0.01, dist));
+        intensity += (1.0 - smoothstep(0.0, smoothing_width, dist));
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
@@ -433,26 +474,37 @@ std::string WaveModeRenderer::generateWaveformGLSL(int nWaveMode, const std::map
     return glsl;
 }
 
-std::unique_ptr<WaveModeRenderer> WaveModeRenderer::create(int nWaveMode, const std::map<std::string, std::string>& /*presetValues*/)
+std::string WaveModeRenderer::generateCallPattern(int nWaveMode, const std::map<std::string, std::string>& presetValues)
+{
+    auto renderer = create(nWaveMode, presetValues);
+    if (!renderer)
+    {
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
+    }
+
+    return renderer->callPattern();
+}
+
+std::unique_ptr<WaveModeRenderer> WaveModeRenderer::create(int nWaveMode, const std::map<std::string, std::string>& presetValues)
 {
     switch (nWaveMode)
     {
         case 0:
-            return std::make_unique<CircleWaveRenderer>();
+            return std::make_unique<CircleWaveRenderer>(presetValues);
         case 2:
-            return std::make_unique<CenteredSpiroRenderer>();
+            return std::make_unique<CenteredSpiroRenderer>(presetValues);
         case 3:
-            return std::make_unique<CenteredSpiroVolumeRenderer>();
+            return std::make_unique<CenteredSpiroVolumeRenderer>(presetValues);
         case 4:
-            return std::make_unique<DerivativeLineRenderer>();
+            return std::make_unique<DerivativeLineRenderer>(presetValues);
         case 5:
-            return std::make_unique<ExplosiveHashRenderer>();
+            return std::make_unique<ExplosiveHashRenderer>(presetValues);
         case 6:
-            return std::make_unique<LineWaveRenderer>();
+            return std::make_unique<LineWaveRenderer>(presetValues);
         case 7:
-            return std::make_unique<DoubleLineWaveRenderer>();
+            return std::make_unique<DoubleLineWaveRenderer>(presetValues);
         case 8:
-            return std::make_unique<SpectrumLineRenderer>();
+            return std::make_unique<SpectrumLineRenderer>(presetValues);
         default:
             return nullptr;
     }
@@ -543,7 +595,7 @@ std::string WaveModeRenderer::generateFallback()
 {
     return R"___(
 // Fallback waveform renderer when the mode is unsupported
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     (void)uv;
     (void)audio_data;
@@ -551,7 +603,44 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
     (void)wave_x;
     (void)wave_y;
     (void)wave_mystery;
+    (void)wave_quality;
     return 0.0;
 }
 )___";
+}
+
+float WaveModeRenderer::presetFloat(const std::string& key, float fallback) const
+{
+    auto it = m_presetValues.find(key);
+    if (it == m_presetValues.end())
+    {
+        return fallback;
+    }
+
+    try
+    {
+        return std::stof(it->second);
+    }
+    catch (const std::exception&)
+    {
+        return fallback;
+    }
+}
+
+int WaveModeRenderer::presetInt(const std::string& key, int fallback) const
+{
+    auto it = m_presetValues.find(key);
+    if (it == m_presetValues.end())
+    {
+        return fallback;
+    }
+
+    try
+    {
+        return std::stoi(it->second);
+    }
+    catch (const std::exception&)
+    {
+        return fallback;
+    }
 }
