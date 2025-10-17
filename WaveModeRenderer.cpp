@@ -4,6 +4,9 @@ namespace {
 
 class CircleWaveRenderer final : public WaveModeRenderer {
 public:
+    explicit CircleWaveRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode0_vertex(float radius, float angle, vec2 center, vec2 aspect)
@@ -20,7 +23,7 @@ vec2 wave_mode0_vertex(float radius, float angle, vec2 center, vec2 aspect)
     std::string drawFunction() const override {
         return R"___(
 // Mode 0: Spectrum circle bars
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     vec2 audio = wave_clamp_audio(audio_data);
     float intensity = 0.0;
@@ -57,20 +60,23 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         }
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
         return R"___(
-draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery)
+draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)
 )___";
     }
 };
 
 class CenteredSpiroRenderer final : public WaveModeRenderer {
 public:
+    explicit CenteredSpiroRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode2_vertex(float displacement_x, float displacement_y, vec2 center, vec2 aspect, float wave_scale)
@@ -84,7 +90,7 @@ vec2 wave_mode2_vertex(float displacement_x, float displacement_y, vec2 center, 
     std::string drawFunction() const override {
         return R"___(
 // Mode 2: Centered dots with trails
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     vec2 audio = wave_clamp_audio(audio_data);
     float intensity = 0.0;
@@ -109,18 +115,21 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         }
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class CenteredSpiroVolumeRenderer final : public WaveModeRenderer {
 public:
+    explicit CenteredSpiroVolumeRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode3_vertex(float displacement_x, float displacement_y, vec2 center, vec2 aspect, float wave_scale)
@@ -134,7 +143,7 @@ vec2 wave_mode3_vertex(float displacement_x, float displacement_y, vec2 center, 
     std::string drawFunction() const override {
         return R"___(
 // Mode 3: Volume-modulated centered dots
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float volume_level)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float volume_level, float wave_quality)
 {
     vec2 audio = wave_clamp_audio(audio_data);
     float intensity = 0.0;
@@ -162,20 +171,23 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         }
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
         return R"___(
-draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, iAudioBands.z)
+draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, iAudioBands.z, wave_quality)
 )___";
     }
 };
 
 class DerivativeLineRenderer final : public WaveModeRenderer {
 public:
+    explicit DerivativeLineRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode_line_vertex(float edge_x, float edge_y, float distance_x, float distance_y,
@@ -191,7 +203,7 @@ vec2 wave_mode_line_vertex(float edge_x, float edge_y, float distance_x, float d
     std::string drawFunction() const override {
         return R"___(
 // Mode 4: Derivative line (scripted horizontal display)
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     vec2 audio = wave_clamp_audio(audio_data);
     float intensity = 0.0;
@@ -227,18 +239,21 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         }
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class ExplosiveHashRenderer final : public WaveModeRenderer {
 public:
+    explicit ExplosiveHashRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode5_vertex(float radius, float angle, vec2 center, vec2 aspect)
@@ -255,7 +270,7 @@ vec2 wave_mode5_vertex(float radius, float angle, vec2 center, vec2 aspect)
     std::string drawFunction() const override {
         return R"___(
 // Mode 5: Explosive hash radial pattern
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     vec2 audio = wave_clamp_audio(audio_data);
     float intensity = 0.0;
@@ -283,18 +298,21 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         }
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class LineWaveRenderer final : public WaveModeRenderer {
 public:
+    explicit LineWaveRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode6_vertex(float edge_x, float edge_y, float distance_x, float distance_y,
@@ -310,7 +328,7 @@ vec2 wave_mode6_vertex(float edge_x, float edge_y, float distance_x, float dista
     std::string drawFunction() const override {
         return R"___(
 // Mode 6: Angle-adjustable line spectrum
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     vec2 audio = wave_clamp_audio(audio_data);
     float intensity = 0.0;
@@ -348,18 +366,21 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         }
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class DoubleLineWaveRenderer final : public WaveModeRenderer {
 public:
+    explicit DoubleLineWaveRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode7_vertex(float edge_x, float edge_y, float distance_x, float distance_y,
@@ -375,7 +396,7 @@ vec2 wave_mode7_vertex(float edge_x, float edge_y, float distance_x, float dista
     std::string drawFunction() const override {
         return R"___(
 // Mode 7: Double spectrum lines
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     vec2 audio = wave_clamp_audio(audio_data);
     float intensity = 0.0;
@@ -422,18 +443,21 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         }
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
 class SpectrumLineRenderer final : public WaveModeRenderer {
 public:
+    explicit SpectrumLineRenderer(const std::map<std::string, std::string>& presetValues)
+        : WaveModeRenderer(presetValues) {}
+
     std::string vertexFunction() const override {
         return R"___(
 vec2 wave_mode8_vertex(float edge_x, float edge_y, float distance_x, float distance_y,
@@ -449,7 +473,7 @@ vec2 wave_mode8_vertex(float edge_x, float edge_y, float distance_x, float dista
     std::string drawFunction() const override {
         return R"___(
 // Mode 8: Spectrum line (angled analyser)
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     vec2 audio = wave_clamp_audio(audio_data);
     float intensity = 0.0;
@@ -486,13 +510,13 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
         }
     }
 
-    return intensity;
+    return intensity * (0.8 + 0.2 * wave_quality);
 }
 )___";
     }
 
     std::string callPattern() const override {
-        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery))___";
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
     }
 };
 
@@ -519,26 +543,37 @@ std::string WaveModeRenderer::generateWaveformGLSL(int nWaveMode, const std::map
     return glsl;
 }
 
-std::unique_ptr<WaveModeRenderer> WaveModeRenderer::create(int nWaveMode, const std::map<std::string, std::string>& /*presetValues*/)
+std::string WaveModeRenderer::generateCallPattern(int nWaveMode, const std::map<std::string, std::string>& presetValues)
+{
+    auto renderer = create(nWaveMode, presetValues);
+    if (!renderer)
+    {
+        return R"___(draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality))___";
+    }
+
+    return renderer->callPattern();
+}
+
+std::unique_ptr<WaveModeRenderer> WaveModeRenderer::create(int nWaveMode, const std::map<std::string, std::string>& presetValues)
 {
     switch (nWaveMode)
     {
         case 0:
-            return std::make_unique<CircleWaveRenderer>();
+            return std::make_unique<CircleWaveRenderer>(presetValues);
         case 2:
-            return std::make_unique<CenteredSpiroRenderer>();
+            return std::make_unique<CenteredSpiroRenderer>(presetValues);
         case 3:
-            return std::make_unique<CenteredSpiroVolumeRenderer>();
+            return std::make_unique<CenteredSpiroVolumeRenderer>(presetValues);
         case 4:
-            return std::make_unique<DerivativeLineRenderer>();
+            return std::make_unique<DerivativeLineRenderer>(presetValues);
         case 5:
-            return std::make_unique<ExplosiveHashRenderer>();
+            return std::make_unique<ExplosiveHashRenderer>(presetValues);
         case 6:
-            return std::make_unique<LineWaveRenderer>();
+            return std::make_unique<LineWaveRenderer>(presetValues);
         case 7:
-            return std::make_unique<DoubleLineWaveRenderer>();
+            return std::make_unique<DoubleLineWaveRenderer>(presetValues);
         case 8:
-            return std::make_unique<SpectrumLineRenderer>();
+            return std::make_unique<SpectrumLineRenderer>(presetValues);
         default:
             return nullptr;
     }
@@ -707,7 +742,7 @@ std::string WaveModeRenderer::generateFallback()
 {
     return R"___(
 // Fallback waveform renderer when the mode is unsupported
-float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery)
+float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_y, float wave_mystery, float wave_quality)
 {
     (void)uv;
     (void)audio_data;
@@ -715,7 +750,44 @@ float draw_wave(vec2 uv, vec2 audio_data, int samples, float wave_x, float wave_
     (void)wave_x;
     (void)wave_y;
     (void)wave_mystery;
+    (void)wave_quality;
     return 0.0;
 }
 )___";
+}
+
+float WaveModeRenderer::presetFloat(const std::string& key, float fallback) const
+{
+    auto it = m_presetValues.find(key);
+    if (it == m_presetValues.end())
+    {
+        return fallback;
+    }
+
+    try
+    {
+        return std::stof(it->second);
+    }
+    catch (const std::exception&)
+    {
+        return fallback;
+    }
+}
+
+int WaveModeRenderer::presetInt(const std::string& key, int fallback) const
+{
+    auto it = m_presetValues.find(key);
+    if (it == m_presetValues.end())
+    {
+        return fallback;
+    }
+
+    try
+    {
+        return std::stoi(it->second);
+    }
+    catch (const std::exception&)
+    {
+        return fallback;
+    }
 }
