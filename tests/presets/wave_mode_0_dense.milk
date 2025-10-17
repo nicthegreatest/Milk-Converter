@@ -1,0 +1,14 @@
+[preset00]
+per_frame_000=wave_mystery=sin(time*0.25);
+per_frame_001=wave_x=0.58;
+per_frame_002=wave_y=0.42;
+per_frame_003=wave_a=0.85;
+per_frame_004=wave_samples=512;
+per_frame_005=wave_scale=1.1;
+wave_r=0.9
+wave_g=0.8
+wave_b=0.5
+wave_x=0.58
+wave_y=0.42
+wave_a=0.85
+nWaveMode=0

@@ -205,7 +205,7 @@ This regression test locks down the per-pixel translation behavior, ensuring tha
 
 ### 6.2 Multi-waveform mode regression testing
 
-With the addition of full waveform mode support, new regression tests validate all classic MilkDrop wave modes. Test fixtures for modes 0,2,3,4,5,6,7,8 ensure proper GLSL generation for each rendering style.
+With the addition of full waveform mode support, the regression harness now validates both minimal and stress configurations for every classic MilkDrop wave mode. Lightweight fixtures lock down the canonical behavior, while new "dense" presets push iteration caps, orientation clipping, and safe-distance helpers so we catch regressions at the performance boundaries.
 
 **Wave Mode Test Coverage:**
 - **Mode 0**: CircularBarsRenderer (spectrum circle bars)
@@ -217,20 +217,44 @@ With the addition of full waveform mode support, new regression tests validate a
 - **Mode 7**: DoubleLineWaveRenderer (dual spectrum lines)
 - **Mode 8**: SpectrumLineRenderer (spectrum analyzer lines)
 
+**Stress Fixtures:**
+- `wave_mode_0_dense.milk` – high-density radial bars that exercise radius clamps and mystery modulation
+- `wave_mode_6_dense.milk` – orientation sweeps that validate edge clipping and line segment capping
+- `wave_mode_8_stress.milk` – log-scaled displacement with extreme sample budgets to test iteration guards
+
 Run the waveform regression tests:
 
 ```bash
 python3 tests/regression_wave_modes.py --converter build/MilkdropConverter --fixtures tests/presets/
+# or via CTest
+ctest --test-dir build -R wave_mode_regression -V
 ```
 
 **Test Details:**
-- Each wave mode preset sets a specific `nWaveMode` value and minimal parameters
+- Each wave mode preset sets a specific `nWaveMode` value and minimal parameters, with dense fixtures dialling up sample counts and orientation offsets
 - The test script verifies that the appropriate mode-specific GLSL functions are generated
 - Validates that `wave_quality` uniform is present and propagated through draw call patterns
-- Ensures proper uniform parameterization (no direct uniform access in helper functions)
-- Checks that mode-aware call patterns match expectations (e.g., Mode 3 includes `iAudioBands.z` for volume modulation)
+- Confirms loop cap patterns (`MODE*_MAX_WAVE_ITERATIONS`) remain intact and bounded `for` loops are emitted
+- Ensures safe distance helpers (`wave_safe_distance`, `wave_distance_to_segment`, `clip_waveform_edges`) remain wired in
 
-### 6.3 Balancing waveform quality vs throughput
+Run the shader spec & fallback regression:
+
+```bash
+python3 tests/regression_shader_spec.py \
+    --converter build/MilkdropConverter \
+    --fixtures tests/presets \
+    --baseline baked.milk \
+    --spec-presets acid.milk eos.milk wave_mode_0_dense.milk wave_mode_6_dense.milk wave_mode_8_stress.milk \
+    --fallback-preset unsupported_wave_mode.milk
+# or via CTest
+ctest --test-dir build -R shader_spec_regression -V
+```
+
+### 6.3 Raymarch spec & fallback regression
+
+The shader-spec harness performs a lightweight “shaderlint” pass across representative presets to ensure the generated GLSL honours the RaymarchVibe contract. It checks for the required preamble (`#version 330 core`), standard uniform block, balanced braces, and absence of deprecated `gl_FragColor`. A dedicated fallback fixture (`unsupported_wave_mode.milk`) guarantees that unsupported or overly complex presets emit the no-op `draw_wave` implementation so RaymarchVibe never runs an out-of-bounds waveform loop.
+
+### 6.4 Balancing waveform quality vs throughput
 
 All generated shaders expose `u_wave_quality` (0.1–1.0 slider) to help authors tune performance on constrained hardware. Suggested workflow:
 
@@ -240,9 +264,22 @@ All generated shaders expose `u_wave_quality` (0.1–1.0 slider) to help authors
 
 Every wave mode derives its safe sample cap from the preset metadata, then applies `wave_quality` inside the GLSL loops. This guarantees the waveform never exceeds the converter’s loop ceilings while maintaining consistent animation speed and audio response.
 
-- Each wave mode preset sets a specific `nWaveMode` value and minimal parameters (fixtures cover modes 0, 2, 3, 4, 5, 6, 7, and 8)
-- The test script verifies that the appropriate mode-specific GLSL helpers are generated and that each shader declares the expected `MODE*_MAX_WAVE_ITERATIONS` cap.
-- Confirms that the hardened waveform helpers (`wave_clamp_audio`, `wave_contribution`, `wave_should_exit`) are emitted so draw loops respect the new safety bounds.
+- Fixtures now cover modes 0, 2, 3, 4, 5, 6, 7, and 8 across both minimal and dense presets so we exercise worst-case wave complexity.
+- The regression harness asserts that mode-specific helpers, loop cap patterns (`MODE*_MAX_WAVE_ITERATIONS`), and early-exit heuristics stay intact.
+- Shader-spec tests confirm the fallback `draw_wave` implementation is emitted whenever presets exceed the supported waveform feature set.
+
+### 6.5 Manual performance & compatibility validation
+
+To complement the automated regressions, run a manual spot check on representative hardware:
+
+1. **Target hardware**: 1920×1080 display paired with a mid-tier GPU (GTX 1650 / RX 6500 XT class) or better. Integrated graphics should sustain ≥45 fps with `u_wave_quality = 0.5`.
+2. **Build**: Produce a Release build of the converter and regenerate shaders for the presets under review.
+3. **Runtime validation**:
+   - Load the converted shader in RaymarchVibe with frame timing enabled.
+   - Confirm ≥60 fps while `u_wave_quality = 1.0`; if performance drops, step the slider down until a stable frame rate is restored and log the results.
+   - Toggle between AMD/NVIDIA/Intel drivers where available and watch RaymarchVibe logs for shader compilation warnings.
+4. **Fallback probe**: Deploy the shader generated from `unsupported_wave_mode.milk` and verify the waveform overlay is disabled (fallback returns 0.0) while the UI remains responsive.
+
 ### 7.1. Project Structure
 
 ```
@@ -251,7 +288,10 @@ MilkdropConverter/
 ├── CMakeLists.txt                 # Build configuration
 ├── baked.milk                     # Test preset fixture
 ├── tests/
-│   ├── regression_baked.py        # Automated regression test script
+│   ├── regression_baked.py        # Per-pixel regression test
+│   ├── regression_wave_modes.py   # Waveform safety regression harness
+│   ├── regression_shader_spec.py  # Raymarch spec and fallback checks
+│   ├── presets/                   # Test preset fixtures (minimal, dense, fallback)
 │   └── golden/
 │       └── baked_per_pixel.glsl   # Golden reference for per-pixel translation
 ├── vendor/
@@ -286,9 +326,10 @@ MilkdropConverter/
 4. `GLSLGenerator::generate()` walks AST and emits GLSL code
 
 **Testing Infrastructure**
-- CTest integration for automated regression testing
-- `regression_baked.py` validates per-pixel translation against golden references
-- Checks for critical preset-specific expressions to catch regressions
+- CTest integration for automated regression testing (`baked_per_pixel_regression`, `wave_mode_regression`, `shader_spec_regression`)
+- `regression_baked.py` validates per-pixel translation against golden references and critical preset expressions
+- `regression_wave_modes.py` locks down mode-specific helpers, loop caps, and safe-distance guards across minimal and dense fixtures
+- `regression_shader_spec.py` performs a shaderlint-style pass and verifies waveform fallbacks for unsupported configurations
 
 ### 7.3. Adding Support for New Features
 
