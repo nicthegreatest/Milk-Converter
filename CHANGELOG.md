@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.4] - 2025-10-17
+
+### Fixed
+- **Waveform Safety Hardening:** Introduced GLSL safety primitives, bounded trig wrappers, and per-mode iteration caps to prevent GPU timeout crashes when rendering built-in waveforms.
+- **Regression Coverage:** Extended waveform regression tests to assert iteration caps and helper usage, ensuring future changes retain the safety guardrails.
+
 ## [0.8.3] - 2025-10-16
 
 ### Fixed
