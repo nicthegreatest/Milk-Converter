@@ -112,6 +112,35 @@ The key enhancements include:
 
 These changes result in shaders that are more interactive, visually accurate, and fully integrated with the RaymarchVibe environment... apparantly.
 
+## [0.6.1] - 2025-10-09
+
+Fixes the GLSL shader conversion logic to correctly apply per-pixel transformations and use the proper color variables.
+
+The previous conversion logic had two main flaws:
+1. It calculated per-pixel transformations (zoom, rot, sx, sy, etc.) but never used them, resulting in a static image with no patterns.
+2. It used the initial uniform values for the final fragment color instead of the `ob_r`, `ob_g`, `ob_b` variables calculated in the per-frame logic.
+
+This commit corrects the `translateToGLSL` function in `MilkdropConverter.cpp` to:
+- Inject GLSL boilerplate that applies the calculated transformations to the `uv` coordinates.
+- Set the final `FragColor` using the correct `ob_` variables.
+- Modulate the final color by the transformed UVs to make the warp effect visible.
+
+## [0.6.0] - 2025-10-09
+
+### Fixed
+GLSL code generation to correctly handle boolean logic as floating-point numbers, which is required to match MilkDrop's behavior. The previous implementation generated GLSL `bool` types for comparisons, leading to type mismatch errors when used in expressions expecting floats.
+
+The main changes are:
+- A `float_from_bool(bool)` helper function is now added to the GLSL preamble.
+- All comparison operators (`>`, `==`, etc.) and boolean functions (`bnot`, `band`, `bor`) are now wrapped in `float_from_bool()` to ensure their result is a float (1.0 or 0.0).
+- The `if` function code generation was made smarter to "unwrap" conditions that use `float_from_bool`, avoiding redundant checks and producing cleaner GLSL.
+- The modulo operator is now correctly translated to the `mod()` function for float compatibility.
+
+Additionally, significant changes were made to the build system to resolve dependency issues:
+- The `CMakeLists.txt` was modified to build the `projectm-eval` library directly, bypassing the main `libprojectM` and its unnecessary OpenGL dependency.
+- `PresetFileParser.cpp` and its header are now compiled directly.
+- Stub functions for mutexes required by `projectm-eval` were added to resolve linker errors.
+
 ## [0.5.0] - 2025-10-09
 
 ### Fixed
