@@ -53,7 +53,7 @@ This tool functions as a translator, converting the logic from a `.milk` preset 
 
 5.  **UI Controls:** To make the converted shaders interactive, the converter adds JSON-formatted comments to the generated `uniform` declarations. RaymarchVibe's UI can parse these annotations to create real-time control widgets for the preset's parameters (zoom, rot, decay, colors, etc.).
 
-6.  **Waveform Integration:** For presets with waveforms enabled, the converter generates a `draw_wave()` function that replicates the waveform rendering logic, currently supporting `nWaveMode=6` (Line Wave).
+6.  **Waveform Integration:** For presets with waveforms enabled, the converter generates a `draw_wave()` function that replicates the waveform rendering logic across built-in modes 0, 2, 3, 4, 5, 6, 7, and 8. Version 0.8.4 hardens these shaders with EPSILON guards, bounded trigonometric wrappers, capped iteration counts (≤64), and early-out logic to prevent GPU driver timeouts on long-running waveform loops.
 
 ## 3. Build Instructions
 
@@ -123,7 +123,7 @@ Once built, you can run the converter from the project's root directory with the
 - ✅ **Multi-line Expression Support:** Handles nested conditionals like `pulsefreq=if(equal(pulsefreq,0),2,if(pulse,...))`
 - ✅ **Full Variable Mapping:** Supports q1-q32, t1-t8, audio bands, and all built-in functions
 - ✅ **UI Controls Generation:** Produces JSON-annotated uniforms for real-time parameter adjustment
-- ✅ **Waveform Rendering:** Supports Line Wave mode (nWaveMode=6)
+- ✅ **Waveform Rendering:** Built-in modes 0, 2, 3, 4, 5, 6, 7, and 8 now emit hardened waveform GLSL with bounded trig helpers, ≤64 iteration caps, and early-out safeguards.
 - ✅ **Build System:** Standalone CMake-based build with vendored dependencies
 - ✅ **Regression Testing:** Automated CTest suite validates per-pixel translation correctness
 - ✅ **RaymarchVibe GLSL Compliance:** Generated shaders conform to [RaymarchVibe GLSL specifications](https://github.com/nicthegreatest/raymarchvibe/blob/main/documentation/SHADERS.md)
@@ -145,11 +145,11 @@ The converter successfully translates both per-frame and per-pixel logic from Mi
 
 ### Known Issues & Next Steps
 - **Feedback Buffer Handling:** Converted shaders may exhibit rendering differences compared to manually-written shaders due to feedback loop initialization patterns (see SHADERS.md diagnostics)
-- **Additional Wave Modes:** Currently supports nWaveMode=6; modes 0-5 and 7+ pending implementation
+- **Remaining Wave Modes:** Modes 1 and experimental/custom waveform variants are still pending translation; the supported set (0, 2, 3, 4, 5, 6, 7, 8) now ships with capped loops and safety guards.
 - **Custom Shapes:** Shape rendering not yet implemented
 
 ### Development Priorities
-1. Add support for additional wave modes (0-5, 7+)
+1. Add support for remaining waveform modes (1, 9+, and other custom variants)
 2. Implement custom shape rendering
 3. Expand regression test coverage with additional preset fixtures
 4. (Future Enhancement) Integrate HLSL shader translation for warp/comp shaders
@@ -212,9 +212,9 @@ python3 tests/regression_wave_modes.py --converter build/MilkdropConverter --fix
 ```
 
 **Test Details:**
-- Each wave mode preset sets a specific `nWaveMode` value and minimal parameters
-- The test script verifies that the appropriate mode-specific GLSL functions are generated
-- Ensures proper uniform parameterization (no direct uniform access in helper functions)
+- Each wave mode preset sets a specific `nWaveMode` value and minimal parameters (fixtures cover modes 0, 2, 3, 4, 5, 6, 7, and 8)
+- The test script verifies that the appropriate mode-specific GLSL helpers are generated and that each shader declares the expected `MODE*_MAX_WAVE_ITERATIONS` cap.
+- Confirms that the hardened waveform helpers (`wave_clamp_audio`, `wave_contribution`, `wave_should_exit`) are emitted so draw loops respect the new safety bounds.
 ### 7.1. Project Structure
 
 ```
