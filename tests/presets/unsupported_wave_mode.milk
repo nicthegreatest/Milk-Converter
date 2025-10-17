@@ -1,0 +1,13 @@
+[preset00]
+per_frame_000=wave_a=0.5;
+per_frame_001=wave_x=0.5;
+per_frame_002=wave_y=0.5;
+per_frame_003=wave_samples=4096;
+wave_r=0.9
+wave_g=0.4
+wave_b=0.2
+wave_a=1.0
+wave_x=0.5
+wave_y=0.5
+nWaveMode=11
+wave_enabled=1
