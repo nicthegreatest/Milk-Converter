@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2025-10-18
+
+### Added
+- **Shader Spec Regression:** Introduced `tests/regression_shader_spec.py` and a matching CTest target to assert RaymarchVibe preamble requirements, balanced braces, and waveform fallback behaviour for unsupported presets.
+- **Waveform Safety Coverage:** Expanded the waveform regression harness with dense fixtures, loop-cap pattern checks, and safe-distance helper assertions across all supported modes.
+- **Documentation Updates:** Captured a 60 fps baseline performance plan, updated project docs with the new regression harnesses, and refreshed raymarch instructions to reflect multi-mode support.
+
+### Changed
+- **Test Fixtures:** Added high-complexity waveform presets and an unsupported-mode fallback fixture to broaden compatibility coverage.
+- **CI Configuration:** CTest now executes the shader spec regression alongside existing baked and waveform suites, tightening release gates around shader safety.
+
 ## [0.9.0] - 2025-10-17
 
 ### Added

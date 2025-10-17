@@ -53,4 +53,15 @@ if(BUILD_TESTING)
       --converter $<TARGET_FILE:MilkdropConverter>
       --fixtures ${CMAKE_SOURCE_DIR}/tests/presets
   )
+
+  add_test(
+    NAME shader_spec_regression
+    COMMAND Python3::Interpreter
+      ${CMAKE_SOURCE_DIR}/tests/regression_shader_spec.py
+      --converter $<TARGET_FILE:MilkdropConverter>
+      --fixtures ${CMAKE_SOURCE_DIR}/tests/presets
+      --baseline ${CMAKE_SOURCE_DIR}/baked.milk
+      --spec-presets acid.milk eos.milk wave_mode_0_dense.milk wave_mode_6_dense.milk wave_mode_8_stress.milk
+      --fallback-preset unsupported_wave_mode.milk
+  )
 endif()

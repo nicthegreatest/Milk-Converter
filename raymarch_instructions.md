@@ -71,10 +71,10 @@ uniform float u_zoom = 1.0; // {"widget":"slider", "min":0.5, "max":2.0, "step":
 5. ✅ **Function Mapping:** All MilkDrop functions (sin, cos, sqrt, if, rand, etc.) translated to GLSL equivalents
 6. ✅ **UI Controls:** JSON-annotated uniforms for real-time parameter adjustment
 7. ✅ **Feedback Loop:** Proper sampling from `iChannel0` with UV clamping
-8. ✅ **Waveform Rendering:** nWaveMode=6 (Line Wave) support
+8. ✅ **Waveform Rendering:** Built-in modes 0, 2, 3, 4, 5, 6, 7, and 8 ship with bounded loops, safe-distance helpers, and quality-aware tuning
 
 ## Known Limitations
 
-1. **Wave Modes:** Only nWaveMode=6 currently implemented; modes 0-5 and 7+ pending
+1. **Wave Modes:** Mode 1 and experimental/custom waveform variants remain TODO; they currently fall back to the no-op renderer
 2. **Custom Shapes:** Shape rendering not yet implemented
 3. **Feedback Buffer:** Rendering differences may occur vs manually-written shaders (see SHADERS.md diagnostics)
