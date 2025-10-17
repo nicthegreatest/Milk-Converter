@@ -16,39 +16,60 @@ WAVE_FIXTURES = {
     "wave_mode_0.milk": {
         "mode_comment": "// Mode 0: Spectrum circle bars",
         "functions": ["wave_mode0_vertex"],
-        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
+        "max_constant": "MODE0_MAX_WAVE_ITERATIONS",
+        "helpers": ["wave_distance_to_segment("],
     },
     "wave_mode_2.milk": {
         "mode_comment": "// Mode 2: Centered dots with trails",
         "functions": ["wave_mode2_vertex"],
-        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
+        "max_constant": "MODE2_MAX_WAVE_ITERATIONS",
+        "helpers": ["wave_safe_distance("],
     },
     "wave_mode_3.milk": {
         "mode_comment": "// Mode 3: Volume-modulated centered dots",
         "functions": ["wave_mode3_vertex"],
-        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, iAudioBands.z, wave_quality)",
+        "max_constant": "MODE3_MAX_WAVE_ITERATIONS",
+        "helpers": ["wave_safe_distance("],
     },
     "wave_mode_4.milk": {
         "mode_comment": "// Mode 4: Derivative line (scripted horizontal display)",
         "functions": ["wave_mode_line_vertex"],
-        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
+        "max_constant": "MODE4_MAX_WAVE_ITERATIONS",
+        "helpers": ["wave_distance_to_segment("],
     },
     "wave_mode_5.milk": {
         "mode_comment": "// Mode 5: Explosive hash radial pattern",
         "functions": ["wave_mode5_vertex"],
-        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
+        "max_constant": "MODE5_MAX_WAVE_ITERATIONS",
+        "helpers": ["wave_safe_distance("],
     },
     "wave_mode_6.milk": {
         "mode_comment": "// Mode 6: Angle-adjustable line spectrum",
         "functions": ["wave_mode6_vertex"],
-        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
+        "max_constant": "MODE6_MAX_WAVE_ITERATIONS",
+        "helpers": ["wave_distance_to_segment("],
     },
     "wave_mode_7.milk": {
         "mode_comment": "// Mode 7: Double spectrum lines",
         "functions": ["wave_mode7_vertex"],
-        "call": "draw_wave(pixelUV, iAudioBands.xy, 128, wave_x, wave_y, wave_mystery, wave_quality)",
+        "max_constant": "MODE7_MAX_WAVE_ITERATIONS",
+        "helpers": ["wave_distance_to_segment("],
+    },
+    "wave_mode_8.milk": {
+        "mode_comment": "// Mode 8: Spectrum line (angled analyser)",
+        "functions": ["wave_mode8_vertex"],
+        "max_constant": "MODE8_MAX_WAVE_ITERATIONS",
+        "helpers": ["wave_distance_to_segment("],
     },
 }
+
+
+COMMON_SNIPPETS = [
+    "const float WAVE_EPSILON",
+    "wave_contribution(",
+    "wave_clamp_audio(",
+    "wave_should_exit(",
+]
 
 
 def run_converter(converter: Path, preset: Path, output: Path) -> None:
@@ -96,6 +117,24 @@ def validate_fixture(converter: Path, fixtures_dir: Path, preset_name: str) -> N
         raise AssertionError(
             f"Expected call pattern '{call_pattern}' not found in GLSL for {preset_name}"
         )
+
+    for snippet in COMMON_SNIPPETS:
+        if snippet not in fragment:
+            raise AssertionError(
+                f"Expected shared helper '{snippet}' not found in GLSL for {preset_name}"
+            )
+
+    max_constant = expectations.get("max_constant")
+    if max_constant and max_constant not in fragment:
+        raise AssertionError(
+            f"Expected iteration cap '{max_constant}' not found in GLSL for {preset_name}"
+        )
+
+    for helper_snippet in expectations.get("helpers", []):
+        if helper_snippet not in fragment:
+            raise AssertionError(
+                f"Expected helper usage '{helper_snippet}' not found in GLSL for {preset_name}"
+            )
 
 
 def main() -> int:

@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **Mode Calibration:** Tuned per-mode smoothing, intensity scaling, and sample budgeting to remain visually faithful under loop caps while scaling with `wave_quality`.
 - **Fallback Safety:** Added lightweight fallbacks for heavy wave modes when quality is reduced, keeping audio-reactive outlines legible even at aggressive performance caps.
+## [0.8.4] - 2025-10-17
+
+### Fixed
+- **Waveform Safety Hardening:** Introduced GLSL safety primitives, bounded trig wrappers, and per-mode iteration caps to prevent GPU timeout crashes when rendering built-in waveforms.
+- **Regression Coverage:** Extended waveform regression tests to assert iteration caps and helper usage, ensuring future changes retain the safety guardrails.
 
 ## [0.8.3] - 2025-10-16
 
